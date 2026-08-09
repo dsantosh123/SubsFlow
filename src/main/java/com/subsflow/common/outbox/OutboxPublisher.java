@@ -64,8 +64,12 @@ public class OutboxPublisher {
                     // Resolve topic name from event type
                     String topic = resolveTopic(event.getEventType());
                     
-                    // Publish synchronously to verify acknowledgment
-                    kafkaTemplate.send(topic, event.getPayload()).get();
+                    try {
+                        kafkaTemplate.send(topic, event.getPayload()).get();
+                    } catch (Exception publishException) {
+                        log.warn("Kafka unavailable for event {}. Leaving it pending for retry", event.getId(), publishException);
+                        throw publishException;
+                    }
 
                     event.setStatus(OutboxEventStatus.PROCESSED);
                     outboxEventRepository.save(event);

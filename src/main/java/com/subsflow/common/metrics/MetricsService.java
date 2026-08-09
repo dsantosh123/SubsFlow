@@ -4,6 +4,7 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.stereotype.Component;
 
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 @Component
@@ -13,6 +14,7 @@ public class MetricsService {
     private final Counter paymentFailedCounter;
     private final Counter dunningRetryCounter;
     private final AtomicReference<Double> activeMrr = new AtomicReference<>(0.0);
+    private final AtomicInteger activeSubscriptions = new AtomicInteger(0);
 
     public MetricsService(MeterRegistry registry) {
         this.paymentSuccessCounter = Counter.builder("subsflow.payment.success")
@@ -28,6 +30,7 @@ public class MetricsService {
                 .register(registry);
 
         registry.gauge("subsflow.mrr", activeMrr, AtomicReference::get);
+        registry.gauge("subsflow.active.subscriptions", activeSubscriptions, AtomicInteger::get);
     }
 
     public void incrementPaymentSuccess() {
@@ -44,5 +47,9 @@ public class MetricsService {
 
     public void updateMrr(double mrrValue) {
         activeMrr.set(mrrValue);
+    }
+
+    public void setActiveSubscriptions(int count) {
+        activeSubscriptions.set(count);
     }
 }

@@ -1,2 +1,2 @@
-com\subsflow\tenant\TenantIsolationTest.class
 com\subsflow\payment\IdempotencyServiceTest.class
+com\subsflow\tenant\TenantIsolationTest.class

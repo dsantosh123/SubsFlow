@@ -144,11 +144,9 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 
         // Apply changes to Subscription
         subscription.setPlan(newPlan);
-        if (paymentSuccess) {
-            subscription.setStatus(SubscriptionStatus.ACTIVE);
-        } else {
-            subscription.setStatus(SubscriptionStatus.PAST_DUE);
-        }
+        SubscriptionStatus targetStatus = paymentSuccess ? SubscriptionStatus.ACTIVE : SubscriptionStatus.PAST_DUE;
+        SubscriptionStatusTransition.requireTransition(subscription.getStatus(), targetStatus, "plan change");
+        subscription.setStatus(targetStatus);
         Subscription updatedSubscription = subscriptionRepository.save(subscription);
 
         // Enqueue Outbox Event
@@ -165,7 +163,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 
     @Override
     @Transactional
-    public void ingestUsage(String subscriptionId, double quantity, String eventType) {
+    public void ingestUsage(String subscriptionId, BigDecimal quantity, String eventType) {
         log.info("Ingesting usage event for subscription: {}, quantity: {}, type: {}", subscriptionId, quantity, eventType);
 
         Subscription subscription = subscriptionRepository.findById(subscriptionId)
@@ -174,7 +172,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         UsageEvent event = new UsageEvent();
         event.setId("use_" + UUID.randomUUID().toString().substring(0, 8));
         event.setSubscription(subscription);
-        event.setQuantity(BigDecimal.valueOf(quantity).setScale(4, RoundingMode.HALF_UP));
+        event.setQuantity(quantity.setScale(4, RoundingMode.HALF_UP));
         event.setEventType(eventType);
         event.setTimestamp(OffsetDateTime.now());
         usageEventRepository.save(event);

@@ -38,6 +38,7 @@ public class DunningScheduler {
 
     private static final Logger log = LoggerFactory.getLogger(DunningScheduler.class);
     private static final int MAX_RETRIES = 3;
+    private static final int[] BACKOFF_MINUTES = {1, 3, 7};
 
     private final TenantRepository tenantRepository;
     private final PaymentRetryQueueRepository retryQueueRepository;
@@ -142,8 +143,8 @@ public class DunningScheduler {
                         ));
                         log.warn("Dunning failed! Max retries exceeded. Subscription {} SUSPENDED", subscription.getId());
                     } else {
-                        // Exponential backoff: retry in 2 minutes * attempt count
-                        retry.setNextRetryAt(OffsetDateTime.now().plusMinutes(2L * attempts));
+                        int backoffMinutes = BACKOFF_MINUTES[Math.min(attempts - 1, BACKOFF_MINUTES.length - 1)];
+                        retry.setNextRetryAt(OffsetDateTime.now().plusMinutes(backoffMinutes));
                         retry.setStatus(RetryStatus.PENDING);
                         retryQueueRepository.save(retry);
                         log.info("Dunning retry failed. Rescheduling attempt {} for {}", attempts + 1, retry.getNextRetryAt());

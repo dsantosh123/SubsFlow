@@ -70,6 +70,7 @@ public class PaymentServiceImpl implements PaymentService {
         try {
             response = gatewayClient.charge(request);
         } catch (Exception e) {
+            log.warn("Payment gateway call failed for invoice {}", invoice.getId(), e);
             throw new RuntimeException(e);
         }
 

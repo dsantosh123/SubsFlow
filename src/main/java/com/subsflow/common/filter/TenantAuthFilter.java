@@ -64,12 +64,15 @@ public class TenantAuthFilter extends OncePerRequestFilter {
     }
 
     private boolean isPublicPath(String path, String method) {
-        // Tenants onboarding (POST) is public
-        if ("/api/v1/tenants".equals(path) && "POST".equalsIgnoreCase(method)) {
+        // Public tenant onboarding and login routes
+        if (("/api/v1/tenants".equals(path) || "/api/v1/tenants/login".equals(path)) && ("POST".equalsIgnoreCase(method) || "OPTIONS".equalsIgnoreCase(method))) {
             return true;
         }
         // Actuator endpoints are public (health, prometheus, etc.)
         if (path.startsWith("/actuator")) {
+            return true;
+        }
+        if ("OPTIONS".equalsIgnoreCase(method)) {
             return true;
         }
         // For swagger / OpenAPI if needed
