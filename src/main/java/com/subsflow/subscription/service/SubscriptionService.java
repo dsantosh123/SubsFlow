@@ -12,6 +12,16 @@ public interface SubscriptionService {
     Subscription changePlan(String subscriptionId, String newPlanId, String paymentMethodId, String idempotencyKey);
 
     /**
+     * Creates a new subscription for a given plan.
+     */
+    Subscription createSubscription(String planId);
+
+    /**
+     * Cancels an existing active or past-due subscription.
+     */
+    Subscription cancelSubscription(String subscriptionId);
+
+    /**
      * Records a usage event for the current cycle.
      */
     void ingestUsage(String subscriptionId, BigDecimal quantity, String eventType);

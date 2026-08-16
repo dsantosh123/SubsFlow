@@ -59,6 +59,29 @@ public class SubscriptionController {
         return ResponseEntity.ok(plans);
     }
 
+    @PostMapping
+    public ResponseEntity<?> createSubscription(@RequestBody CreateSubscriptionRequest request) {
+        if (request.getPlanId() == null || request.getPlanId().trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "planId is required"));
+        }
+        try {
+            Subscription subscription = subscriptionService.createSubscription(request.getPlanId());
+            return ResponseEntity.ok(SubscriptionSummaryResponse.from(subscription));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/{id}/cancel")
+    public ResponseEntity<?> cancelSubscription(@PathVariable("id") String subscriptionId) {
+        try {
+            Subscription subscription = subscriptionService.cancelSubscription(subscriptionId);
+            return ResponseEntity.ok(SubscriptionSummaryResponse.from(subscription));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
+        }
+    }
+
     @PostMapping("/{id}/change-plan")
     public ResponseEntity<?> changePlan(
             @PathVariable("id") String subscriptionId,
@@ -234,6 +257,18 @@ public class SubscriptionController {
 
         public void setEventType(String eventType) {
             this.eventType = eventType;
+        }
+    }
+
+    public static class CreateSubscriptionRequest {
+        private String planId;
+
+        public String getPlanId() {
+            return planId;
+        }
+
+        public void setPlanId(String planId) {
+            this.planId = planId;
         }
     }
 }

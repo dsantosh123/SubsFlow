@@ -178,6 +178,55 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         usageEventRepository.save(event);
     }
 
+    @Override
+    @Transactional
+    public Subscription createSubscription(String planId) {
+        log.info("Creating subscription for plan: {}", planId);
+        BillingPlan plan = billingPlanRepository.findById(planId)
+                .orElseThrow(() -> new IllegalArgumentException("Billing plan not found: " + planId));
+
+        OffsetDateTime now = OffsetDateTime.now();
+        OffsetDateTime periodEnd = plan.getBillingPeriod() == com.subsflow.subscription.entity.BillingPeriod.YEARLY
+                ? now.plusYears(1) : now.plusMonths(1);
+
+        Subscription subscription = new Subscription();
+        subscription.setId("sub_" + UUID.randomUUID().toString().substring(0, 8));
+        subscription.setPlan(plan);
+        subscription.setStatus(SubscriptionStatus.ACTIVE);
+        subscription.setCurrentPeriodStart(now);
+        subscription.setCurrentPeriodEnd(periodEnd);
+        subscription.setVersion(0L);
+
+        Subscription saved = subscriptionRepository.save(subscription);
+
+        writeOutboxEvent("subscription.created", Map.of(
+                "subscriptionId", saved.getId(),
+                "planId", plan.getId(),
+                "status", saved.getStatus().name()
+        ));
+
+        return saved;
+    }
+
+    @Override
+    @Transactional
+    public Subscription cancelSubscription(String subscriptionId) {
+        log.info("Cancelling subscription: {}", subscriptionId);
+        Subscription subscription = subscriptionRepository.findById(subscriptionId)
+                .orElseThrow(() -> new IllegalArgumentException("Subscription not found: " + subscriptionId));
+
+        SubscriptionStatusTransition.requireTransition(subscription.getStatus(), SubscriptionStatus.CANCELLED, "cancellation");
+        subscription.setStatus(SubscriptionStatus.CANCELLED);
+        Subscription saved = subscriptionRepository.save(subscription);
+
+        writeOutboxEvent("subscription.cancelled", Map.of(
+                "subscriptionId", saved.getId(),
+                "status", saved.getStatus().name()
+        ));
+
+        return saved;
+    }
+
     private void writeOutboxEvent(String eventType, Object payload) {
         try {
             String jsonPayload = objectMapper.writeValueAsString(payload);
