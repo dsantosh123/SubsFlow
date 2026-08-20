@@ -1,6 +1,6 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
-/* ── Reset ────────────────────────────────────────────────── */
+/* ── Global Reset ────────────────────────────────────────── */
 *,
 *::before,
 *::after {
@@ -10,47 +10,84 @@
 }
 
 :root {
-  /* Palette */
-  --bg-primary: #0a0e1a;
-  --bg-secondary: #111827;
-  --bg-glass: rgba(17, 24, 39, 0.6);
-  --bg-glass-hover: rgba(17, 24, 39, 0.8);
-  --border-glass: rgba(255, 255, 255, 0.08);
-  --border-glass-hover: rgba(255, 255, 255, 0.15);
+  /* ── Light Theme Foundation Palette ── */
+  --bg-app: #f8fafc;
+  --bg-surface: #ffffff;
+  --bg-subtle: #f1f5f9;
+  --bg-hover: #e2e8f0;
+  
+  /* Glassmorphism for Light Theme */
+  --bg-glass: rgba(255, 255, 255, 0.85);
+  --bg-glass-card: rgba(255, 255, 255, 0.92);
+  --border-glass: rgba(226, 232, 240, 0.8);
+  --border-glass-hover: rgba(203, 213, 225, 1);
+  --border-subtle: #e2e8f0;
+  --border-focus: #6366f1;
 
-  --text-primary: #f1f5f9;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
+  /* Text & Typography */
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --text-inverse: #ffffff;
 
-  --accent-blue: #3b82f6;
-  --accent-blue-glow: rgba(59, 130, 246, 0.25);
-  --accent-purple: #8b5cf6;
-  --accent-purple-glow: rgba(139, 92, 246, 0.25);
-  --accent-emerald: #10b981;
-  --accent-emerald-glow: rgba(16, 185, 129, 0.2);
-  --accent-amber: #f59e0b;
-  --accent-amber-glow: rgba(245, 158, 11, 0.2);
-  --accent-red: #ef4444;
-  --accent-red-glow: rgba(239, 68, 68, 0.2);
-  --accent-cyan: #06b6d4;
+  /* Vibrant Accent Palette */
+  --accent-primary: #4f46e5;       /* Royal Indigo */
+  --accent-primary-hover: #4338ca;
+  --accent-primary-light: #eef2ff;
+  --accent-primary-glow: rgba(79, 70, 229, 0.18);
 
-  --gradient-primary: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
-  --gradient-bg: radial-gradient(ellipse at 20% 50%, rgba(59, 130, 246, 0.08) 0%, transparent 50%),
-    radial-gradient(ellipse at 80% 20%, rgba(139, 92, 246, 0.06) 0%, transparent 50%),
-    radial-gradient(ellipse at 50% 100%, rgba(16, 185, 129, 0.04) 0%, transparent 50%);
+  --accent-violet: #7c3aed;        /* Electric Violet */
+  --accent-violet-light: #f5f3ff;
+  --accent-violet-glow: rgba(124, 58, 237, 0.18);
 
-  --radius: 16px;
-  --radius-sm: 10px;
+  --accent-emerald: #059669;       /* Emerald Green - Success */
+  --accent-emerald-light: #ecfdf5;
+  --accent-emerald-border: #a7f3d0;
+  --accent-emerald-glow: rgba(5, 150, 105, 0.18);
+
+  --accent-cyan: #0891b2;          /* Tech Cyan - Broker/Relay */
+  --accent-cyan-light: #ecfeff;
+  --accent-cyan-border: #a5f3fc;
+
+  --accent-amber: #d97706;         /* Amber - Warning / Pending */
+  --accent-amber-light: #fffbeb;
+  --accent-amber-border: #fde68a;
+  --accent-amber-glow: rgba(217, 119, 6, 0.18);
+
+  --accent-rose: #e11d48;          /* Rose - Error / Suspended */
+  --accent-rose-light: #fff1f2;
+  --accent-rose-border: #fecdd3;
+  --accent-rose-glow: rgba(225, 29, 72, 0.18);
+
+  /* Gradients */
+  --gradient-primary: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  --gradient-emerald: linear-gradient(135deg, #059669 0%, #10b981 100%);
+  --gradient-cyan: linear-gradient(135deg, #0891b2 0%, #06b6d4 100%);
+  --gradient-card-highlight: linear-gradient(180deg, rgba(255, 255, 255, 1) 0%, rgba(248, 250, 252, 0.7) 100%);
+  --gradient-ambient-mesh: radial-gradient(at 10% 10%, rgba(79, 70, 229, 0.06) 0px, transparent 50%),
+                           radial-gradient(at 90% 15%, rgba(6, 182, 212, 0.05) 0px, transparent 50%),
+                           radial-gradient(at 50% 85%, rgba(16, 185, 129, 0.04) 0px, transparent 50%);
+
+  /* Elevation & Shadows */
   --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-full: 9999px;
 
-  --shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-  --shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.4);
+  --shadow-xs: 0 1px 2px 0 rgba(15, 23, 42, 0.04);
+  --shadow-sm: 0 2px 6px -1px rgba(15, 23, 42, 0.06), 0 1px 3px -1px rgba(15, 23, 42, 0.04);
+  --shadow-md: 0 8px 16px -3px rgba(15, 23, 42, 0.06), 0 4px 6px -2px rgba(15, 23, 42, 0.03);
+  --shadow-lg: 0 20px 25px -5px rgba(15, 23, 42, 0.07), 0 8px 10px -6px rgba(15, 23, 42, 0.04);
+  --shadow-xl: 0 25px 50px -12px rgba(15, 23, 42, 0.12);
 
+  --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-smooth: 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   color: var(--text-primary);
-  background: var(--bg-primary);
+  background-color: var(--bg-app);
 }
 
 html,
@@ -60,40 +97,49 @@ body,
 }
 
 body {
-  background: var(--bg-primary);
-  background-image: var(--gradient-bg);
+  background-color: var(--bg-app);
+  background-image: var(--gradient-ambient-mesh);
   background-attachment: fixed;
+  color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* ── Scrollbar ────────────────────────────────────────────── */
+/* ── Modern Custom Scrollbars ────────────────────────────── */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
+
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 3px;
+  background: #cbd5e1;
+  border-radius: 4px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: #94a3b8;
 }
 
-/* ── Utility ──────────────────────────────────────────────── */
-.glass {
-  background: var(--bg-glass);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+/* ── Base Utility Classes ────────────────────────────────── */
+.glass-panel {
+  background: var(--bg-glass-card);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--border-glass);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  transition: border-color var(--transition), box-shadow var(--transition);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  transition: border-color var(--transition), box-shadow var(--transition), transform var(--transition);
 }
 
-.glass:hover {
+.glass-panel:hover {
   border-color: var(--border-glass-hover);
+  box-shadow: var(--shadow-md);
+}
+
+.code-font {
+  font-family: 'JetBrains Mono', monospace;
 }

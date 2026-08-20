@@ -8,6 +8,7 @@ import com.subsflow.tenant.entity.Tenant;
 import com.subsflow.tenant.repository.TenantRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -15,7 +16,10 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 
 @Component
 @EnableScheduling
@@ -26,25 +30,38 @@ public class OutboxPublisher {
     private final TenantRepository tenantRepository;
     private final OutboxEventRepository outboxEventRepository;
     private final KafkaTemplate<String, String> kafkaTemplate;
+    private final Executor taskExecutor;
 
     public OutboxPublisher(TenantRepository tenantRepository,
                            OutboxEventRepository outboxEventRepository,
-                           KafkaTemplate<String, String> kafkaTemplate) {
+                           KafkaTemplate<String, String> kafkaTemplate,
+                           @Qualifier("subsflowTaskExecutor") Executor taskExecutor) {
         this.tenantRepository = tenantRepository;
         this.outboxEventRepository = outboxEventRepository;
         this.kafkaTemplate = kafkaTemplate;
+        this.taskExecutor = taskExecutor;
     }
 
     @Scheduled(fixedDelay = 1000)
     public void publishEvents() {
         List<Tenant> tenants = tenantRepository.findAll();
-        for (Tenant tenant : tenants) {
-            try {
-                processTenantEvents(tenant.getId());
-            } catch (Exception e) {
-                log.error("Error publishing events for tenant: {}", tenant.getId(), e);
-            }
+        if (tenants.isEmpty()) {
+            return;
         }
+
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
+        for (Tenant tenant : tenants) {
+            CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
+                try {
+                    processTenantEvents(tenant.getId());
+                } catch (Exception e) {
+                    log.error("Error publishing events for tenant: {}", tenant.getId(), e);
+                }
+            }, taskExecutor);
+            futures.add(future);
+        }
+
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -61,7 +78,6 @@ public class OutboxPublisher {
 
             for (OutboxEvent event : pendingEvents) {
                 try {
-                    // Resolve topic name from event type
                     String topic = resolveTopic(event.getEventType());
                     
                     try {
@@ -86,7 +102,6 @@ public class OutboxPublisher {
     }
 
     private String resolveTopic(String eventType) {
-        // Map event types to Kafka topics
         if ("payment.succeeded".equals(eventType)) {
             return "payment.succeeded";
         } else if ("payment.failed".equals(eventType)) {

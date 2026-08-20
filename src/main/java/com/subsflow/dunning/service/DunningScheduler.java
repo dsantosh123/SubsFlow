@@ -48,6 +48,7 @@ public class DunningScheduler {
     private final OutboxEventRepository outboxEventRepository;
     private final ObjectMapper objectMapper;
     private final com.subsflow.common.metrics.MetricsService metricsService;
+    private final java.util.concurrent.Executor taskExecutor;
 
     public DunningScheduler(TenantRepository tenantRepository,
                             PaymentRetryQueueRepository retryQueueRepository,
@@ -56,7 +57,8 @@ public class DunningScheduler {
                             InvoiceRepository invoiceRepository,
                             OutboxEventRepository outboxEventRepository,
                             ObjectMapper objectMapper,
-                            com.subsflow.common.metrics.MetricsService metricsService) {
+                            com.subsflow.common.metrics.MetricsService metricsService,
+                            @org.springframework.beans.factory.annotation.Qualifier("subsflowTaskExecutor") java.util.concurrent.Executor taskExecutor) {
         this.tenantRepository = tenantRepository;
         this.retryQueueRepository = retryQueueRepository;
         this.paymentService = paymentService;
@@ -65,18 +67,29 @@ public class DunningScheduler {
         this.outboxEventRepository = outboxEventRepository;
         this.objectMapper = objectMapper;
         this.metricsService = metricsService;
+        this.taskExecutor = taskExecutor;
     }
 
     @Scheduled(fixedDelay = 5000)
     public void processDunningQueue() {
         List<Tenant> tenants = tenantRepository.findAll();
-        for (Tenant tenant : tenants) {
-            try {
-                processTenantRetries(tenant.getId());
-            } catch (Exception e) {
-                log.error("Error processing dunning retries for tenant: {}", tenant.getId(), e);
-            }
+        if (tenants.isEmpty()) {
+            return;
         }
+
+        List<java.util.concurrent.CompletableFuture<Void>> futures = new java.util.ArrayList<>();
+        for (Tenant tenant : tenants) {
+            java.util.concurrent.CompletableFuture<Void> future = java.util.concurrent.CompletableFuture.runAsync(() -> {
+                try {
+                    processTenantRetries(tenant.getId());
+                } catch (Exception e) {
+                    log.error("Error processing dunning retries for tenant: {}", tenant.getId(), e);
+                }
+            }, taskExecutor);
+            futures.add(future);
+        }
+
+        java.util.concurrent.CompletableFuture.allOf(futures.toArray(new java.util.concurrent.CompletableFuture[0])).join();
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)

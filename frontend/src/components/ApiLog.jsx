@@ -1,61 +1,110 @@
+import { useState } from 'react';
 import './ApiLog.css';
 
-function statusColor(status) {
-  if (status >= 200 && status < 300) return 'color-success';
-  if (status >= 400 && status < 500) return 'color-warning';
-  if (status >= 500) return 'color-error';
-  return '';
-}
+export default function ApiLog({ logs, onClear, onTriggerToast }) {
+  const [expandedId, setExpandedId] = useState(null);
+  const [methodFilter, setMethodFilter] = useState('ALL');
 
-export default function ApiLog({ logs, onClear }) {
+  const toggleExpand = (id) => {
+    setExpandedId((prev) => (prev === id ? null : id));
+  };
+
+  const copyCurl = (e, log) => {
+    e.stopPropagation();
+    const curl = `curl -X ${log.method} "http://localhost:8080${log.url}" -H "Content-Type: application/json"`;
+    navigator.clipboard.writeText(curl);
+    onTriggerToast?.('info', 'cURL Copied', `Copied ${log.method} command to clipboard.`);
+  };
+
+  const filteredLogs = logs.filter((log) => {
+    if (methodFilter === 'ALL') return true;
+    return log.method === methodFilter;
+  });
+
   return (
-    <div className="api-log glass">
+    <aside className="api-log glass-panel animate-fade-in">
       <div className="api-log-header">
-        <h2 className="section-title">
-          <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            <polyline points="4 17 10 11 4 5" />
-            <line x1="12" y1="19" x2="20" y2="19" />
-          </svg>
-          API Request Log
-        </h2>
+        <div className="api-log-title-group">
+          <span className="log-indicator-dot" />
+          <h3 className="api-log-title">Live API Inspector & Telemetry</h3>
+          <span className="log-count-badge">{logs.length}</span>
+        </div>
+
         <div className="api-log-actions">
-          <span className="log-count">{logs.length} request{logs.length !== 1 && 's'}</span>
-          <button className="btn-clear" onClick={onClear} disabled={logs.length === 0}>Clear</button>
+          <div className="log-filter-chips">
+            {['ALL', 'GET', 'POST'].map((m) => (
+              <button
+                key={m}
+                className={`log-chip ${methodFilter === m ? 'active' : ''}`}
+                onClick={() => setMethodFilter(m)}
+              >
+                {m}
+              </button>
+            ))}
+          </div>
+
+          <button className="btn-clear-log" onClick={onClear} title="Clear telemetry log">
+            Clear
+          </button>
         </div>
       </div>
 
       <div className="api-log-body">
-        {logs.length === 0 ? (
-          <div className="log-empty">No API requests made yet. Action logs will appear here.</div>
-        ) : (
-          <div className="log-entries">
-            {logs.map((log) => (
-              <div key={log.id} className="log-entry">
-                <div className="log-entry-meta">
-                  <span className="log-time">{log.timestamp}</span>
-                  <span className={`log-method ${log.method.toLowerCase()}`}>{log.method}</span>
-                  <span className="log-url">{log.url}</span>
-                  <span className="log-spacer" />
-                  {log.idempotencyKey && (
-                    <span className="log-idem" title="Idempotency Key">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                      </svg>
-                      {log.idempotencyKey}
-                    </span>
-                  )}
-                  <span className={`log-status ${statusColor(log.status)}`}>{log.status}</span>
-                  <span className="log-elapsed">{log.elapsed}ms</span>
-                </div>
-                <div className="log-entry-body">
-                  <pre>{JSON.stringify(log.body, null, 2)}</pre>
-                </div>
-              </div>
-            ))}
+        {filteredLogs.length === 0 ? (
+          <div className="api-log-empty">
+            <span className="empty-log-icon">📡</span>
+            <p>Awaiting API network traffic…</p>
           </div>
+        ) : (
+          filteredLogs.map((log) => {
+            const isExpanded = expandedId === log.id;
+            const is2xx = log.status >= 200 && log.status < 300;
+            const is4xx = log.status >= 400 && log.status < 500;
+            const is5xx = log.status >= 500;
+
+            const statusClass = is2xx ? 'status-2xx' : is4xx ? 'status-4xx' : is5xx ? 'status-5xx' : 'status-0';
+
+            return (
+              <div
+                key={log.id}
+                className={`log-entry ${isExpanded ? 'log-entry-expanded' : ''}`}
+                onClick={() => toggleExpand(log.id)}
+              >
+                <div className="log-entry-summary">
+                  <div className="log-left">
+                    <span className={`log-method method-${log.method.toLowerCase()}`}>{log.method}</span>
+                    <span className={`log-status ${statusClass}`}>{log.status || 'ERR'}</span>
+                    <span className="log-path code-font" title={log.url}>{log.url}</span>
+                  </div>
+
+                  <div className="log-right">
+                    <span className="log-latency">{log.elapsed}ms</span>
+                    <span className="log-time">{log.timestamp}</span>
+                    <button
+                      className="btn-copy-curl"
+                      onClick={(e) => copyCurl(e, log)}
+                      title="Copy cURL snippet"
+                    >
+                      cURL
+                    </button>
+                  </div>
+                </div>
+
+                {isExpanded && log.body && (
+                  <div className="log-payload-viewer">
+                    <div className="payload-header">
+                      <span>Response JSON Payload</span>
+                    </div>
+                    <pre className="log-body-json">
+                      <code>{typeof log.body === 'string' ? log.body : JSON.stringify(log.body, null, 2)}</code>
+                    </pre>
+                  </div>
+                )}
+              </div>
+            );
+          })
         )}
       </div>
-    </div>
+    </aside>
   );
 }

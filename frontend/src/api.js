@@ -1,20 +1,52 @@
 const BASE = '/api/v1';
 
+const TOKEN_KEY = 'subsflow_jwt_token';
+const TENANT_KEY = 'subsflow_tenant_data';
+
+export function getStoredToken() {
+  return localStorage.getItem(TOKEN_KEY);
+}
+
+export function setStoredAuth(token, tenant) {
+  if (token) localStorage.setItem(TOKEN_KEY, token);
+  if (tenant) localStorage.setItem(TENANT_KEY, JSON.stringify(tenant));
+}
+
+export function getStoredTenant() {
+  const data = localStorage.getItem(TENANT_KEY);
+  try {
+    return data ? JSON.parse(data) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function clearStoredAuth() {
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(TENANT_KEY);
+}
+
 /**
  * Centralised API layer for SubsFlow backend.
  * Every function returns { ok, status, data } so callers get a uniform shape.
  */
-
 async function request(path, options = {}) {
   const start = performance.now();
   const method = options.method || 'GET';
   const url = `${BASE}${path}`;
+
+  const token = getStoredToken();
+  const authHeaders = {};
+  if (token) {
+    authHeaders['Authorization'] = `Bearer ${token}`;
+  }
 
   try {
     const res = await fetch(url, {
       ...options,
       headers: {
         'Content-Type': 'application/json',
+        ...authHeaders,
         ...(options.headers || {}),
       },
     });
@@ -51,33 +83,45 @@ async function request(path, options = {}) {
   }
 }
 
-/* ── Tenant ───────────────────────────────────────────────── */
+/* ── Tenant Auth ──────────────────────────────────────────── */
 
-export function onboardTenant(name) {
-  return request('/tenants', {
+export async function onboardTenant(name) {
+  const res = await request('/tenants', {
     method: 'POST',
     body: JSON.stringify({ name }),
   });
+  if (res.ok && res.data?.token) {
+    setStoredAuth(res.data.token, res.data);
+  }
+  return res;
 }
 
-export function loginTenant(apiKey) {
-  return request('/tenants/login', {
+export async function loginTenant(apiKey) {
+  const res = await request('/tenants/login', {
     method: 'POST',
     body: JSON.stringify({ apiKey }),
   });
+  if (res.ok && res.data?.token) {
+    setStoredAuth(res.data.token, res.data);
+  }
+  return res;
+}
+
+export function getCurrentTenant() {
+  return request('/tenants/me');
 }
 
 /* ── Subscriptions ────────────────────────────────────────── */
 
 export function listSubscriptions(apiKey) {
   return request('/subscriptions', {
-    headers: { 'X-API-Key': apiKey },
+    headers: apiKey ? { 'X-API-Key': apiKey } : {},
   });
 }
 
 export function listPlans(apiKey) {
   return request('/subscriptions/plans', {
-    headers: { 'X-API-Key': apiKey },
+    headers: apiKey ? { 'X-API-Key': apiKey } : {},
   });
 }
 
@@ -85,7 +129,7 @@ export function changePlan(apiKey, subscriptionId, newPlanId, paymentMethodId, i
   return request(`/subscriptions/${subscriptionId}/change-plan`, {
     method: 'POST',
     headers: {
-      'X-API-Key': apiKey,
+      ...(apiKey ? { 'X-API-Key': apiKey } : {}),
       'Idempotency-Key': idempotencyKey,
     },
     body: JSON.stringify({ newPlanId, paymentMethodId }),
@@ -95,7 +139,7 @@ export function changePlan(apiKey, subscriptionId, newPlanId, paymentMethodId, i
 export function createSubscription(apiKey, planId) {
   return request('/subscriptions', {
     method: 'POST',
-    headers: { 'X-API-Key': apiKey },
+    headers: apiKey ? { 'X-API-Key': apiKey } : {},
     body: JSON.stringify({ planId }),
   });
 }
@@ -103,14 +147,14 @@ export function createSubscription(apiKey, planId) {
 export function cancelSubscription(apiKey, subscriptionId) {
   return request(`/subscriptions/${subscriptionId}/cancel`, {
     method: 'POST',
-    headers: { 'X-API-Key': apiKey },
+    headers: apiKey ? { 'X-API-Key': apiKey } : {},
   });
 }
 
 export function ingestUsage(apiKey, subscriptionId, quantity, eventType) {
   return request(`/subscriptions/${subscriptionId}/usage`, {
     method: 'POST',
-    headers: { 'X-API-Key': apiKey },
+    headers: apiKey ? { 'X-API-Key': apiKey } : {},
     body: JSON.stringify({ quantity: parseFloat(quantity), eventType }),
   });
 }
@@ -119,12 +163,12 @@ export function ingestUsage(apiKey, subscriptionId, quantity, eventType) {
 
 export function listInvoices(apiKey) {
   return request('/invoices', {
-    headers: { 'X-API-Key': apiKey },
+    headers: apiKey ? { 'X-API-Key': apiKey } : {},
   });
 }
 
 export function getInvoiceDetails(apiKey, invoiceId) {
   return request(`/invoices/${invoiceId}`, {
-    headers: { 'X-API-Key': apiKey },
+    headers: apiKey ? { 'X-API-Key': apiKey } : {},
   });
 }

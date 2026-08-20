@@ -78,4 +78,16 @@ public class IdempotencyServiceImpl implements IdempotencyService {
         idempotency.setResponsePayload(responsePayload);
         idempotencyKeyRepository.save(idempotency);
     }
+
+    @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void failOperation(String key, String reason) {
+        String tenantId = TenantContext.getTenantId();
+        if (tenantId == null) {
+            return;
+        }
+
+        IdempotencyKeyId id = new IdempotencyKeyId(tenantId, key);
+        idempotencyKeyRepository.findById(id).ifPresent(idempotencyKeyRepository::delete);
+    }
 }

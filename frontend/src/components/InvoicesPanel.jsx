@@ -6,10 +6,11 @@ function invoiceStatusBadge(status) {
   const map = {
     PAID: 'badge-active',
     DRAFT: 'badge-trial',
+    UNPAID: 'badge-past-due',
     PENDING: 'badge-past-due',
     VOID: 'badge-cancelled',
   };
-  return map[status] || '';
+  return map[status] || 'badge-trial';
 }
 
 function formatDate(dateStr) {
@@ -25,9 +26,11 @@ function formatDate(dateStr) {
   }
 }
 
-export default function InvoicesPanel({ apiKey, invoices, loading, onRefresh, addLog }) {
+export default function InvoicesPanel({ apiKey, invoices, loading, onRefresh, addLog, onTriggerToast }) {
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
+  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const handleSelectInvoice = async (inv) => {
     if (selectedInvoice && selectedInvoice.id === inv.id) {
@@ -53,20 +56,32 @@ export default function InvoicesPanel({ apiKey, invoices, loading, onRefresh, ad
     setDetailsLoading(false);
   };
 
+  const filteredInvoices = invoices.filter((inv) => {
+    const matchesStatus = statusFilter === 'ALL' || inv.status === statusFilter;
+    const matchesSearch = !searchQuery ||
+      inv.id?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      inv.subscriptionId?.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesStatus && matchesSearch;
+  });
+
+  const copyInvoiceId = (e, id) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(id);
+    onTriggerToast?.('info', 'Copied to Clipboard', `Invoice ID: ${id}`);
+  };
+
   return (
-    <div className="panel glass">
+    <div className="panel glass-panel animate-fade-in">
       <div className="section-header">
-        <h2 className="section-title">
-          <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-            <polyline points="14 2 14 8 20 8" />
-            <line x1="16" y1="13" x2="8" y2="13" />
-            <line x1="16" y1="17" x2="8" y2="17" />
-            <polyline points="10 9 9 9 8 9" />
-          </svg>
-          Invoices & Billing History
-        </h2>
-        <button className="btn-refresh" onClick={onRefresh}>
+        <div className="section-title-wrap">
+          <div className="panel-badge-icon">🧾</div>
+          <div>
+            <h2 className="section-title">Invoices & Billing History</h2>
+            <p className="panel-subtitle">Audited financial records, prorated line items, and transaction logs.</p>
+          </div>
+        </div>
+
+        <button className="btn-refresh" onClick={onRefresh} title="Refresh invoices">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
             <path d="M21 2v6h-6" />
             <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
@@ -77,18 +92,41 @@ export default function InvoicesPanel({ apiKey, invoices, loading, onRefresh, ad
         </button>
       </div>
 
+      {/* Filter and Search Bar */}
+      <div className="invoice-filters-bar">
+        <div className="status-filter-pills">
+          {['ALL', 'PAID', 'DRAFT', 'UNPAID'].map((status) => (
+            <button
+              key={status}
+              className={`filter-pill ${statusFilter === status ? 'active' : ''}`}
+              onClick={() => setStatusFilter(status)}
+            >
+              {status}
+            </button>
+          ))}
+        </div>
+
+        <div className="invoice-search-wrap">
+          <input
+            type="text"
+            className="invoice-search-input"
+            placeholder="Search invoice or sub ID…"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+      </div>
+
       {loading ? (
         <div className="panel-loading"><div className="spinner" /></div>
-      ) : invoices.length === 0 ? (
+      ) : filteredInvoices.length === 0 ? (
         <div className="panel-empty">
-          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-          </svg>
-          <p>No invoices generated yet</p>
+          <span className="empty-emoji">📑</span>
+          <p>No invoices found matching current criteria.</p>
         </div>
       ) : (
         <div className="invoices-list">
-          {invoices.map((inv) => {
+          {filteredInvoices.map((inv) => {
             const isSelected = selectedInvoice && selectedInvoice.id === inv.id;
             return (
               <div
@@ -98,33 +136,52 @@ export default function InvoicesPanel({ apiKey, invoices, loading, onRefresh, ad
               >
                 <div className="invoice-card-top">
                   <div>
-                    <h3 className="invoice-id">Invoice: {inv.id}</h3>
+                    <div className="invoice-id-row">
+                      <h3 className="invoice-id code-font">{inv.id}</h3>
+                      <button
+                        className="btn-copy-id"
+                        onClick={(e) => copyInvoiceId(e, inv.id)}
+                        title="Copy Invoice ID"
+                      >
+                        📋
+                      </button>
+                    </div>
                     <span className="invoice-sub-id">Sub: {inv.subscriptionId || 'N/A'}</span>
                   </div>
                   <div className="invoice-amount-box">
-                    <span className="invoice-amount">${parseFloat(inv.amount).toFixed(2)}</span>
+                    <span className="invoice-amount">${parseFloat(inv.amount || 0).toFixed(2)}</span>
                     <span className={`badge ${invoiceStatusBadge(inv.status)}`}>{inv.status}</span>
                   </div>
                 </div>
 
                 <div className="invoice-dates">
-                  <span>Created: {formatDate(inv.createdAt)}</span>
-                  <span>Due: {formatDate(inv.dueDate)}</span>
+                  <span>📅 Issue: {formatDate(inv.createdAt)}</span>
+                  <span>⏳ Due: {formatDate(inv.dueDate)}</span>
                 </div>
 
                 {isSelected && (
                   <div className="invoice-details-expand">
-                    <h4 className="line-items-title">Line Items</h4>
+                    <div className="details-expand-header">
+                      <h4 className="line-items-title">Itemized Line Items & Prorations</h4>
+                      <span className="details-badge">Verified DB Record</span>
+                    </div>
+
                     {detailsLoading ? (
-                      <div className="spinner" style={{ margin: '12px auto' }} />
+                      <div className="spinner" style={{ margin: '16px auto' }} />
                     ) : selectedInvoice.lineItems && selectedInvoice.lineItems.length > 0 ? (
-                      <div className="line-items-list">
+                      <div className="line-items-table">
+                        <div className="line-items-table-header">
+                          <span>Description</span>
+                          <span>Type</span>
+                          <span style={{ textAlign: 'right' }}>Amount</span>
+                        </div>
                         {selectedInvoice.lineItems.map((item) => (
                           <div key={item.id} className="line-item-row">
                             <div className="line-item-desc">
-                              <span>{item.description}</span>
-                              <span className="line-item-type">{item.type}</span>
+                              <span className="desc-main">{item.description}</span>
+                              <span className="desc-id code-font">{item.id}</span>
                             </div>
+                            <span className="line-item-type-badge">{item.type}</span>
                             <span className={`line-item-amount ${item.amount < 0 ? 'amount-credit' : ''}`}>
                               {item.amount < 0 ? '-' : ''}${Math.abs(parseFloat(item.amount)).toFixed(2)}
                             </span>
@@ -132,7 +189,7 @@ export default function InvoicesPanel({ apiKey, invoices, loading, onRefresh, ad
                         ))}
                       </div>
                     ) : (
-                      <p className="no-line-items">No detailed line items available.</p>
+                      <p className="no-line-items">No individual line items recorded for this invoice draft.</p>
                     )}
                   </div>
                 )}

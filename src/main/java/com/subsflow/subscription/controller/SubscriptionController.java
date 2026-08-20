@@ -122,10 +122,13 @@ public class SubscriptionController {
             idempotencyService.completeOperation(idempotencyKey, jsonResponse);
             return ResponseEntity.ok(updatedSub);
         } catch (ObjectOptimisticLockingFailureException e) {
+            idempotencyService.failOperation(idempotencyKey, "Optimistic locking failure");
             return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", "Subscription was updated concurrently, please retry"));
         } catch (IllegalStateException e) {
+            idempotencyService.failOperation(idempotencyKey, e.getMessage());
             return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
+            idempotencyService.failOperation(idempotencyKey, e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", e.getMessage()));
         }
     }

@@ -1,6 +1,8 @@
 package com.subsflow.common.filter;
 
 import com.subsflow.common.context.TenantContext;
+import com.subsflow.common.security.JwtService;
+import com.subsflow.common.security.RateLimiterService;
 import com.subsflow.tenant.entity.Tenant;
 import com.subsflow.tenant.entity.TenantStatus;
 import com.subsflow.tenant.repository.TenantRepository;
@@ -20,9 +22,13 @@ import java.util.Optional;
 public class TenantAuthFilter extends OncePerRequestFilter {
 
     private final TenantRepository tenantRepository;
+    private final JwtService jwtService;
+    private final RateLimiterService rateLimiterService;
 
-    public TenantAuthFilter(TenantRepository tenantRepository) {
+    public TenantAuthFilter(TenantRepository tenantRepository, JwtService jwtService, RateLimiterService rateLimiterService) {
         this.tenantRepository = tenantRepository;
+        this.jwtService = jwtService;
+        this.rateLimiterService = rateLimiterService;
     }
 
     @Override
@@ -31,32 +37,67 @@ public class TenantAuthFilter extends OncePerRequestFilter {
 
         String path = request.getRequestURI();
 
-        // Bypass check for public paths
+        // Bypass check for public paths and static assets
         if (isPublicPath(path, request.getMethod())) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        String apiKey = request.getHeader("X-API-Key");
-        if (apiKey == null || apiKey.trim().isEmpty()) {
-            writeErrorResponse(response, HttpStatus.UNAUTHORIZED, "Missing X-API-Key header");
+        Tenant authenticatedTenant = null;
+
+        // 1. Try JWT Bearer Authentication
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            String jwt = authHeader.substring(7).trim();
+            if (jwtService.isTokenValid(jwt)) {
+                String tenantId = jwtService.extractTenantId(jwt);
+                if (tenantId != null) {
+                    authenticatedTenant = tenantRepository.findById(tenantId).orElse(null);
+                    if (authenticatedTenant == null) {
+                        writeErrorResponse(response, HttpStatus.UNAUTHORIZED, "Tenant associated with JWT token no longer exists");
+                        return;
+                    }
+                }
+            } else {
+                writeErrorResponse(response, HttpStatus.UNAUTHORIZED, "Invalid or expired JWT token");
+                return;
+            }
+        }
+
+        // 2. Fallback to X-API-Key Authentication
+        if (authenticatedTenant == null) {
+            String apiKey = request.getHeader("X-API-Key");
+            if (apiKey != null && !apiKey.trim().isEmpty()) {
+                Optional<Tenant> tenantOpt = tenantRepository.findByApiKey(apiKey.trim());
+                if (tenantOpt.isPresent()) {
+                    authenticatedTenant = tenantOpt.get();
+                } else {
+                    writeErrorResponse(response, HttpStatus.UNAUTHORIZED, "Invalid X-API-Key");
+                    return;
+                }
+            }
+        }
+
+        // 3. If neither authentication mechanism succeeded
+        if (authenticatedTenant == null) {
+            writeErrorResponse(response, HttpStatus.UNAUTHORIZED, "Missing Authorization Bearer token or X-API-Key header");
             return;
         }
 
-        Optional<Tenant> tenantOpt = tenantRepository.findByApiKey(apiKey);
-        if (tenantOpt.isEmpty()) {
-            writeErrorResponse(response, HttpStatus.UNAUTHORIZED, "Invalid X-API-Key");
-            return;
-        }
-
-        Tenant tenant = tenantOpt.get();
-        if (tenant.getStatus() == TenantStatus.SUSPENDED) {
+        // 4. Verify account status
+        if (authenticatedTenant.getStatus() == TenantStatus.SUSPENDED) {
             writeErrorResponse(response, HttpStatus.FORBIDDEN, "Tenant account is suspended");
             return;
         }
 
+        // 5. Distributed Redis Rate Limiting (Shed load before executing expensive queries)
+        if (!rateLimiterService.isAllowed(authenticatedTenant.getId())) {
+            writeErrorResponse(response, HttpStatus.TOO_MANY_REQUESTS, "Tenant rate limit quota exceeded. Try again in a few moments.");
+            return;
+        }
+
         try {
-            TenantContext.setTenantId(tenant.getId());
+            TenantContext.setTenantId(authenticatedTenant.getId());
             filterChain.doFilter(request, response);
         } finally {
             TenantContext.clear();
@@ -64,6 +105,11 @@ public class TenantAuthFilter extends OncePerRequestFilter {
     }
 
     private boolean isPublicPath(String path, String method) {
+        // Allow all frontend static assets (SPA UI at root, /assets/*, /index.html, /favicon.ico)
+        if (!path.startsWith("/api/")) {
+            return true;
+        }
+
         // Public tenant onboarding and login routes
         if (("/api/v1/tenants".equals(path) || "/api/v1/tenants/login".equals(path)) && ("POST".equalsIgnoreCase(method) || "OPTIONS".equalsIgnoreCase(method))) {
             return true;

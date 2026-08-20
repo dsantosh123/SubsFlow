@@ -23,4 +23,12 @@ public interface IdempotencyService {
      * @param responsePayload the response payload to cache
      */
     void completeOperation(String key, String responsePayload);
+
+    /**
+     * Marks or removes a failed operation so that subsequent retries with the same key can proceed.
+     *
+     * @param key    the idempotency key
+     * @param reason error reason
+     */
+    void failOperation(String key, String reason);
 }

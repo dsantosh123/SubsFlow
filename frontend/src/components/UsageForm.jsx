@@ -1,23 +1,26 @@
 import { useState } from 'react';
 import { ingestUsage } from '../api';
 
-export default function UsageForm({ apiKey, subscriptions, addLog }) {
+export default function UsageForm({ apiKey, subscriptions, addLog, onTriggerToast }) {
   const [subId, setSubId] = useState('');
-  const [quantity, setQuantity] = useState('');
-  const [eventType, setEventType] = useState('API_CALL');
+  const [quantity, setQuantity] = useState('10');
+  const [eventType, setEventType] = useState('api_requests');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
+
+  const selectedSubId = subId || subscriptions[0]?.id;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!subId || !quantity || !eventType) return;
+    if (!selectedSubId || !quantity) {
+      setError('Please provide a valid subscription and quantity.');
+      return;
+    }
 
     setLoading(true);
     setError('');
-    setSuccess(false);
 
-    const res = await ingestUsage(apiKey, subId, quantity, eventType);
+    const res = await ingestUsage(apiKey, selectedSubId, quantity, eventType);
     addLog({
       method: res.meta.method,
       url: res.meta.url,
@@ -27,79 +30,96 @@ export default function UsageForm({ apiKey, subscriptions, addLog }) {
     });
 
     if (res.ok) {
-      setSuccess(true);
-      setQuantity('');
+      onTriggerToast?.('success', 'Usage Ingested', `Logged ${quantity} ${eventType} for subscription ${selectedSubId}.`);
     } else {
-      setError(res.data?.error || 'Failed to ingest usage');
+      setError(res.data?.error || `Failed with status ${res.status}`);
+      onTriggerToast?.('error', 'Usage Ingestion Failed', res.data?.error || 'Could not record usage event.');
     }
     setLoading(false);
   };
 
+  const applyPreset = (qty, type) => {
+    setQuantity(qty.toString());
+    if (type) setEventType(type);
+  };
+
   return (
-    <div className="panel glass">
+    <div className="panel glass-panel animate-fade-in">
       <div className="section-header">
-        <h2 className="section-title">
-          <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-          </svg>
-          Ingest Usage
-        </h2>
+        <div className="section-title-wrap">
+          <div className="panel-badge-icon">📊</div>
+          <div>
+            <h2 className="section-title">Metered Usage Ingestion</h2>
+            <p className="panel-subtitle">Stream metered billing events for usage-based subscription tiers.</p>
+          </div>
+        </div>
       </div>
 
       <form onSubmit={handleSubmit} className="action-form">
         <div className="input-group">
-          <label htmlFor="usg-sub">Subscription</label>
+          <label htmlFor="usage-sub">Target Subscription</label>
           <select
-            id="usg-sub"
+            id="usage-sub"
             className="input-field"
-            value={subId}
-            onChange={(e) => { setSubId(e.target.value); setSuccess(false); }}
-            required
+            value={selectedSubId || ''}
+            onChange={(e) => setSubId(e.target.value)}
           >
-            <option value="">Select a subscription...</option>
-            {subscriptions.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.planName} ({s.id})
-              </option>
-            ))}
+            {subscriptions.length === 0 ? (
+              <option value="">No subscriptions available</option>
+            ) : (
+              subscriptions.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.id} ({s.plan?.name} · {s.status})
+                </option>
+              ))
+            )}
           </select>
         </div>
 
-        <div className="input-row">
-          <div className="input-group" style={{ flex: 1 }}>
-            <label htmlFor="usg-qty">Quantity</label>
+        <div className="form-row">
+          <div className="input-group">
+            <label htmlFor="usage-qty">Usage Units / Quantity</label>
             <input
-              id="usg-qty"
+              id="usage-qty"
               className="input-field"
               type="number"
-              step="0.01"
-              min="0.01"
-              placeholder="0.00"
+              min="1"
+              step="1"
               value={quantity}
-              onChange={(e) => { setQuantity(e.target.value); setSuccess(false); }}
-              required
+              onChange={(e) => setQuantity(e.target.value)}
             />
           </div>
-          
-          <div className="input-group" style={{ flex: 1 }}>
-            <label htmlFor="usg-evt">Event Type</label>
-            <input
-              id="usg-evt"
+
+          <div className="input-group">
+            <label htmlFor="usage-type">Metric Event Type</label>
+            <select
+              id="usage-type"
               className="input-field"
-              type="text"
-              placeholder="API_CALL"
               value={eventType}
-              onChange={(e) => { setEventType(e.target.value); setSuccess(false); }}
-              required
-            />
+              onChange={(e) => setEventType(e.target.value)}
+            >
+              <option value="api_requests">API Requests (calls)</option>
+              <option value="storage_gb">Storage (GB)</option>
+              <option value="compute_minutes">Compute Time (mins)</option>
+            </select>
           </div>
         </div>
 
-        {error && <div className="form-error">{error}</div>}
-        {success && <div className="form-success">Usage ingested successfully!</div>}
+        <div className="presets-row">
+          <span className="presets-label">Quick Presets:</span>
+          <button type="button" className="preset-chip" onClick={() => applyPreset(50, 'api_requests')}>+50 API</button>
+          <button type="button" className="preset-chip" onClick={() => applyPreset(250, 'api_requests')}>+250 API</button>
+          <button type="button" className="preset-chip" onClick={() => applyPreset(10, 'storage_gb')}>+10 GB</button>
+        </div>
 
-        <button type="submit" className="btn btn-primary" disabled={loading || !subId || !quantity || !eventType}>
-          {loading ? 'Sending...' : 'Ingest Event'}
+        {error && <p className="form-error">{error}</p>}
+
+        <button
+          className="btn btn-secondary btn-full"
+          type="submit"
+          disabled={loading || subscriptions.length === 0}
+        >
+          {loading ? 'Ingesting Usage…' : '⚡ Record Metered Usage'}
         </button>
       </form>
     </div>

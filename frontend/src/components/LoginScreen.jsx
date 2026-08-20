@@ -10,7 +10,7 @@ export default function LoginScreen({ onLogin, addLog }) {
   const [error, setError] = useState('');
 
   const handleLogin = async (e) => {
-    e.preventDefault();
+    e?.preventDefault();
     if (!apiKey.trim()) return;
     setLoading(true);
     setError('');
@@ -27,7 +27,7 @@ export default function LoginScreen({ onLogin, addLog }) {
     if (res.ok) {
       onLogin(res.data);
     } else {
-      setError(res.data?.error || 'Login failed');
+      setError(res.data?.error || 'Login failed. Please verify API key.');
     }
     setLoading(false);
   };
@@ -48,69 +48,94 @@ export default function LoginScreen({ onLogin, addLog }) {
     });
 
     if (res.ok) {
-      // Show the API key before logging them in
-      setMode('onboarded');
       setApiKey(res.data.apiKey);
       onLogin(res.data);
     } else {
-      setError(res.data?.error || 'Onboarding failed');
+      setError(res.data?.error || 'Onboarding failed.');
     }
     setLoading(false);
   };
 
+  const selectQuickKey = (key) => {
+    setApiKey(key);
+    setError('');
+  };
+
   return (
-    <div className="login-container animate-in">
-      <div className="login-card glass">
-        <div className="login-icon">
-          <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-            <rect width="48" height="48" rx="14" fill="url(#login-grad)" />
-            <path d="M16 24C16 19.5817 19.5817 16 24 16C28.4183 16 32 19.5817 32 24" stroke="white" strokeWidth="3" strokeLinecap="round" />
-            <path d="M16 30C16 25.5817 19.5817 22 24 22C28.4183 22 32 25.5817 32 30" stroke="white" strokeWidth="3" strokeLinecap="round" opacity="0.5" />
-            <circle cx="24" cy="33" r="2.5" fill="white" />
+    <div className="login-wrapper">
+      <div className="login-card glass-panel">
+        <div className="login-logo-badge">
+          <svg width="40" height="40" viewBox="0 0 32 32" fill="none">
+            <rect width="32" height="32" rx="10" fill="url(#logo-grad-login)" />
+            <path d="M10 16C10 12.6863 12.6863 10 16 10C19.3137 10 22 12.6863 22 16" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+            <path d="M10 20C10 16.6863 12.6863 14 16 14C19.3137 14 22 16.6863 22 20" stroke="white" strokeWidth="2.5" strokeLinecap="round" opacity="0.6" />
+            <circle cx="16" cy="22" r="2" fill="white" />
             <defs>
-              <linearGradient id="login-grad" x1="0" y1="0" x2="48" y2="48">
-                <stop stopColor="#3b82f6" />
-                <stop offset="1" stopColor="#8b5cf6" />
+              <linearGradient id="logo-grad-login" x1="0" y1="0" x2="32" y2="32">
+                <stop stopColor="#4f46e5" />
+                <stop offset="1" stopColor="#7c3aed" />
               </linearGradient>
             </defs>
           </svg>
         </div>
 
-        <h2 className="login-title">Welcome to SubsFlow</h2>
-        <p className="login-desc">Sign in with your API key or create a new tenant account.</p>
+        <h2 className="login-title">SubsFlow SaaS Billing</h2>
+        <p className="login-desc">Enterprise Multi-Tenant Subscription & Transactional Outbox Platform</p>
 
         <div className="login-tabs">
           <button
             className={`login-tab ${mode === 'login' ? 'active' : ''}`}
             onClick={() => { setMode('login'); setError(''); }}
           >
-            Sign In
+            Sign In with API Key
           </button>
           <button
             className={`login-tab ${mode === 'onboard' ? 'active' : ''}`}
             onClick={() => { setMode('onboard'); setError(''); }}
           >
-            Create Tenant
+            Create New Tenant
           </button>
         </div>
 
         {mode === 'login' && (
           <form className="login-form" onSubmit={handleLogin}>
             <div className="input-group">
-              <label htmlFor="api-key">API Key</label>
+              <label htmlFor="api-key">Tenant API Key</label>
               <input
                 id="api-key"
-                className="input-field"
+                className="input-field code-font"
                 type="text"
-                placeholder="sk_test_1 or your API key"
+                placeholder="sk_test_1"
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
                 autoFocus
               />
             </div>
+
+            <div className="quick-tenants-box">
+              <span className="quick-title">Quick Demo Tenants:</span>
+              <div className="quick-chips">
+                <button
+                  type="button"
+                  className={`chip ${apiKey === 'sk_test_1' ? 'chip-active' : ''}`}
+                  onClick={() => selectQuickKey('sk_test_1')}
+                >
+                  🏢 Acme Corp (sk_test_1)
+                </button>
+                <button
+                  type="button"
+                  className={`chip ${apiKey === 'sk_test_2' ? 'chip-active' : ''}`}
+                  onClick={() => selectQuickKey('sk_test_2')}
+                >
+                  🌐 Globex Inc (sk_test_2)
+                </button>
+              </div>
+            </div>
+
             {error && <p className="login-error">{error}</p>}
+
             <button className="btn btn-primary btn-full" type="submit" disabled={loading || !apiKey.trim()}>
-              {loading ? 'Signing in…' : 'Sign In'}
+              {loading ? 'Authenticating…' : 'Access Tenant Dashboard'}
             </button>
           </form>
         )}
@@ -118,12 +143,12 @@ export default function LoginScreen({ onLogin, addLog }) {
         {mode === 'onboard' && (
           <form className="login-form" onSubmit={handleOnboard}>
             <div className="input-group">
-              <label htmlFor="tenant-name">Tenant Name</label>
+              <label htmlFor="tenant-name">Organization / Company Name</label>
               <input
                 id="tenant-name"
                 className="input-field"
                 type="text"
-                placeholder="e.g. Acme Corp"
+                placeholder="e.g. Apex Dynamics Ltd"
                 value={tenantName}
                 onChange={(e) => setTenantName(e.target.value)}
                 autoFocus
@@ -131,13 +156,15 @@ export default function LoginScreen({ onLogin, addLog }) {
             </div>
             {error && <p className="login-error">{error}</p>}
             <button className="btn btn-primary btn-full" type="submit" disabled={loading || !tenantName.trim()}>
-              {loading ? 'Creating…' : 'Create Tenant'}
+              {loading ? 'Provisioning Tenant…' : 'Provision & Generate Keys'}
             </button>
           </form>
         )}
 
-        <div className="login-hint">
-          <p>Test credentials: <code>sk_test_1</code> (Acme Corp) · <code>sk_test_2</code> (Globex Inc)</p>
+        <div className="login-features-list">
+          <div className="feature-item">✓ Optimistic Locking (@Version)</div>
+          <div className="feature-item">✓ SKIP LOCKED Outbox Relay</div>
+          <div className="feature-item">✓ Resilience4j Circuit Breaker</div>
         </div>
       </div>
     </div>

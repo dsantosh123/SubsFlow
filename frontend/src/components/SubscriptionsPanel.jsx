@@ -1,9 +1,9 @@
 import './SubscriptionsPanel.css';
 
-function statusBadgeClass(status) {
+function statusBadge(status) {
   const map = {
     ACTIVE: 'badge-active',
-    TRIAL: 'badge-trial',
+    TRIALING: 'badge-trial',
     PAST_DUE: 'badge-past-due',
     SUSPENDED: 'badge-suspended',
     CANCELLED: 'badge-cancelled',
@@ -26,22 +26,16 @@ function formatDate(dateStr) {
 
 export default function SubscriptionsPanel({ subscriptions, loading, onRefresh, onCancel }) {
   return (
-    <div className="panel glass">
+    <div className="panel glass-panel animate-fade-in">
       <div className="section-header">
-        <h2 className="section-title">
-          <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            <path d="M12 2v4" />
-            <path d="M12 18v4" />
-            <path d="M4.93 4.93l2.83 2.83" />
-            <path d="M16.24 16.24l2.83 2.83" />
-            <path d="M2 12h4" />
-            <path d="M18 12h4" />
-            <path d="M4.93 19.07l2.83-2.83" />
-            <path d="M16.24 7.76l2.83-2.83" />
-          </svg>
-          Subscriptions
-        </h2>
-        <button className="btn-refresh" onClick={onRefresh}>
+        <div className="section-title-wrap">
+          <div className="panel-badge-icon">💳</div>
+          <div>
+            <h2 className="section-title">Active Subscriptions</h2>
+            <p className="panel-subtitle">Current subscription contracts with optimistic lock versioning.</p>
+          </div>
+        </div>
+        <button className="btn-refresh" onClick={onRefresh} title="Refresh subscriptions">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
             <path d="M21 2v6h-6" />
             <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
@@ -56,43 +50,60 @@ export default function SubscriptionsPanel({ subscriptions, loading, onRefresh, 
         <div className="panel-loading"><div className="spinner" /></div>
       ) : subscriptions.length === 0 ? (
         <div className="panel-empty">
-          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <circle cx="12" cy="12" r="10" />
-            <path d="M8 12h8" />
-          </svg>
-          <p>No subscriptions found for this tenant</p>
+          <span className="empty-emoji">📄</span>
+          <p>No active subscriptions found for this tenant.</p>
+          <span className="empty-hint">Select a plan on the left to subscribe.</span>
         </div>
       ) : (
         <div className="subs-list">
-          {subscriptions.map((sub) => (
-            <div key={sub.id} className="sub-card">
-              <div className="sub-card-top">
-                <div>
-                  <h3 className="sub-plan-name">{sub.planName || 'Unknown Plan'}</h3>
-                  <span className="sub-id">ID: {sub.id}</span>
+          {subscriptions.map((sub) => {
+            const plan = sub.plan || {};
+            const isCancelled = sub.status === 'CANCELLED';
+
+            return (
+              <div key={sub.id} className="sub-card">
+                <div className="sub-card-top">
+                  <div>
+                    <div className="sub-header-line">
+                      <h3 className="sub-plan-name">{plan.name || 'Custom Plan'}</h3>
+                      <span className={`badge ${statusBadge(sub.status)}`}>{sub.status}</span>
+                    </div>
+                    <span className="sub-id code-font">ID: {sub.id}</span>
+                  </div>
+                  <div className="sub-price">
+                    <span className="sub-amount">${parseFloat(plan.price || 0).toLocaleString()}</span>
+                    <span className="sub-interval">/{plan.billingPeriod === 'YEARLY' ? 'yr' : 'mo'}</span>
+                  </div>
                 </div>
-                <div className="sub-card-actions">
-                  <span className={`badge ${statusBadgeClass(sub.status)}`}>{sub.status}</span>
-                  {sub.status !== 'CANCELLED' && onCancel && (
-                    <button className="btn-logout btn-cancel-sub" onClick={() => onCancel(sub.id)} title="Cancel Subscription">
-                      Cancel
+
+                <div className="sub-dates-grid">
+                  <div className="date-block">
+                    <span className="date-label">Period Start</span>
+                    <span className="date-value">{formatDate(sub.currentPeriodStart)}</span>
+                  </div>
+                  <div className="date-block">
+                    <span className="date-label">Renewal / End</span>
+                    <span className="date-value">{formatDate(sub.currentPeriodEnd)}</span>
+                  </div>
+                  <div className="date-block">
+                    <span className="date-label">Lock Version</span>
+                    <span className="date-value code-font">v{sub.version ?? 0}</span>
+                  </div>
+                </div>
+
+                {!isCancelled && onCancel && (
+                  <div className="sub-card-actions">
+                    <button
+                      className="btn btn-sm btn-danger-outline"
+                      onClick={() => onCancel(sub.id)}
+                    >
+                      Cancel Subscription
                     </button>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
-              <div className="sub-period">
-                <div className="sub-period-item">
-                  <span className="sub-period-label">Period Start</span>
-                  <span className="sub-period-value">{formatDate(sub.currentPeriodStart)}</span>
-                </div>
-                <div className="sub-period-divider" />
-                <div className="sub-period-item">
-                  <span className="sub-period-label">Period End</span>
-                  <span className="sub-period-value">{formatDate(sub.currentPeriodEnd)}</span>
-                </div>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
