@@ -1,101 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import PipelineScene3D, { PIPELINE_3D_NODES } from './3d/PipelineScene3D';
 import './PipelineVisualizer.css';
-
-const PIPELINE_NODES = [
-  {
-    id: 'gateway',
-    title: '1. API Gateway',
-    subtitle: 'Idempotency Key validation & Auth Filter',
-    type: 'core',
-    icon: '🌐',
-    badge: 'X-Tenant-ID & Key',
-    desc: 'Extracts client tenant identifier and routes request to idempotency validation filter.'
-  },
-  {
-    id: 'idempotency',
-    title: '2. Idempotency Check',
-    subtitle: 'idempotency_keys table, SHA-256 hash',
-    type: 'core',
-    icon: '🔒',
-    badge: 'SHA-256 Lock',
-    desc: 'Verifies hash integrity and ensures concurrent duplicate requests return cached results safely.'
-  },
-  {
-    id: 'subscription',
-    title: '3. Subscription Service',
-    subtitle: 'Optimistic locking via @Version',
-    type: 'core',
-    icon: '📝',
-    badge: '@Version 0 → 1',
-    desc: 'Calculates billing periods, plans, and applies optimistic lock to prevent race conditions.'
-  },
-  {
-    id: 'engine',
-    title: '4. Resilience4j Payment Engine',
-    subtitle: 'Proration + Circuit Breaker & Retry',
-    type: 'resilience',
-    icon: '🛡️',
-    badge: 'Resilience4j Wrapper',
-    desc: 'Executes proration calculation and calls payment gateway client protected by Circuit Breaker.'
-  },
-  {
-    id: 'postgres',
-    title: '5. PostgreSQL Atomic DB',
-    subtitle: 'Atomic state update + outbox_events insert',
-    type: 'database',
-    icon: '🗄️',
-    badge: 'ACID Transaction',
-    desc: 'Persists Invoice, PaymentTransaction, Subscription state, and OutboxEvent atomically.'
-  },
-  {
-    id: 'outbox',
-    title: '6. Outbox Relay Poller',
-    subtitle: 'FOR UPDATE SKIP LOCKED Poller',
-    type: 'async',
-    icon: '📬',
-    badge: 'SKIP LOCKED',
-    desc: 'Concurrent background workers safely dequeue pending events without table-level blocking.'
-  },
-  {
-    id: 'kafka',
-    title: '7. Kafka Message Broker',
-    subtitle: 'Topic: subscription-events & payment.*',
-    type: 'async',
-    icon: '⚡',
-    badge: 'Event Streaming',
-    desc: 'Fans out events to multiple downstream microservices with at-least-once delivery guarantee.'
-  }
-];
-
-const DOWNSTREAM_SERVICES = [
-  {
-    id: 'invoice',
-    title: 'Invoice Service',
-    subtitle: 'Generates PDF & Ledger line items',
-    icon: '🧾',
-    type: 'async'
-  },
-  {
-    id: 'notification',
-    title: 'Notification Service',
-    subtitle: 'Alerts tenant via Webhook / Email',
-    icon: '🔔',
-    type: 'async'
-  },
-  {
-    id: 'dunning',
-    title: 'Dunning Service',
-    subtitle: 'Exponential Retry Queue (1m, 3m, 7m)',
-    icon: '⚠️',
-    type: 'dunning'
-  }
-];
 
 export default function PipelineVisualizer({ onTriggerToast }) {
   const [activeStep, setActiveStep] = useState(null);
   const [simulationMode, setSimulationMode] = useState(null); // 'normal' | 'decline' | 'timeout'
   const [simulationRunning, setSimulationRunning] = useState(false);
-  const [selectedNode, setSelectedNode] = useState(PIPELINE_NODES[0]);
+  const [selectedNode, setSelectedNode] = useState(PIPELINE_3D_NODES[0]);
 
   const runSimulation = (mode) => {
     if (simulationRunning) return;
@@ -105,38 +16,42 @@ export default function PipelineVisualizer({ onTriggerToast }) {
 
     const stepInterval = 650; // ms per step
 
-    PIPELINE_NODES.forEach((_, idx) => {
+    PIPELINE_3D_NODES.filter(n => !n.isDownstream).forEach((_, idx) => {
       setTimeout(() => {
         setActiveStep(idx);
-        setSelectedNode(PIPELINE_NODES[idx]);
+        setSelectedNode(PIPELINE_3D_NODES[idx]);
       }, idx * stepInterval);
     });
 
-    const totalSteps = PIPELINE_NODES.length;
+    const totalCoreSteps = PIPELINE_3D_NODES.filter(n => !n.isDownstream).length;
     setTimeout(() => {
       setActiveStep('downstream');
       if (mode === 'normal') {
+        setSelectedNode(PIPELINE_3D_NODES.find(n => n.id === 'invoice'));
         onTriggerToast?.('success', 'Pipeline Simulation Complete', 'Payment succeeded and events streamed to Kafka!');
       } else if (mode === 'decline') {
+        setSelectedNode(PIPELINE_3D_NODES.find(n => n.id === 'dunning'));
         onTriggerToast?.('warning', 'Dunning Flow Triggered', 'Simulated card decline: Transaction enqueued for retry backoff.');
       } else if (mode === 'timeout') {
+        setSelectedNode(PIPELINE_3D_NODES.find(n => n.id === 'engine'));
         onTriggerToast?.('error', 'Circuit Breaker Fallback', 'Gateway timeout simulated: Resilience4j handled fallback gracefully.');
       }
       setTimeout(() => {
         setSimulationRunning(false);
-      }, 1200);
-    }, totalSteps * stepInterval);
+      }, 1400);
+    }, totalCoreSteps * stepInterval);
   };
 
   return (
     <div className="pipeline-visualizer-container animate-fade-in">
+      {/* Cockpit Header */}
       <div className="pipeline-header glass-panel">
         <div className="pipeline-title-group">
           <div className="pipeline-badge-icon">⚡</div>
           <div>
-            <h2 className="pipeline-title">Live Architecture & Outbox Pipeline Visualizer</h2>
+            <h2 className="pipeline-title">3D Cyber Architecture & Outbox Pipeline Cockpit</h2>
             <p className="pipeline-subtitle">
-              Real-time representation of SubsFlow's transactional outbox pattern, optimistic locking, and Kafka streaming.
+              Interactive 3D WebGL representation of SubsFlow's transactional outbox pattern, optimistic locking, and Kafka streaming.
             </p>
           </div>
         </div>
@@ -167,78 +82,37 @@ export default function PipelineVisualizer({ onTriggerToast }) {
         </div>
       </div>
 
+      {/* 3D Visualizer & Inspector Grid */}
       <div className="pipeline-body-grid">
-        {/* Left Column: Visual Pipeline Flow */}
-        <div className="pipeline-flow-column glass-panel">
-          <div className="pipeline-nodes-stack">
-            {PIPELINE_NODES.map((node, index) => {
-              const isActive = activeStep === index;
-              const isPassed = typeof activeStep === 'number' && activeStep > index;
-              const isSelected = selectedNode?.id === node.id;
+        {/* Left Column: Interactive 3D Canvas Viewport */}
+        <div className="pipeline-scene-wrapper">
+          <PipelineScene3D
+            activeStep={activeStep}
+            simulationMode={simulationMode}
+            simulationRunning={simulationRunning}
+            selectedNode={selectedNode}
+            onSelectNode={(node) => setSelectedNode(node)}
+          />
 
-              return (
-                <div key={node.id} className="pipeline-node-wrapper">
-                  <div
-                    className={`pipeline-node node-${node.type} ${isActive ? 'node-active' : ''} ${isPassed ? 'node-passed' : ''} ${isSelected ? 'node-selected' : ''}`}
-                    onClick={() => setSelectedNode(node)}
-                  >
-                    <div className="node-icon">{node.icon}</div>
-                    <div className="node-info">
-                      <div className="node-header-row">
-                        <span className="node-title">{node.title}</span>
-                        <span className="node-badge">{node.badge}</span>
-                      </div>
-                      <span className="node-subtitle">{node.subtitle}</span>
-                    </div>
-                    {isActive && <div className="node-pulse-ring" />}
-                  </div>
-
-                  {index < PIPELINE_NODES.length - 1 && (
-                    <div className={`pipeline-connector ${isPassed ? 'connector-active' : ''}`}>
-                      <div className="connector-line" />
-                      <div className="connector-arrow">▼</div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-
-            {/* Downstream Fanout Indicator */}
-            <div className={`pipeline-connector ${activeStep === 'downstream' ? 'connector-active' : ''}`}>
-              <div className="connector-line" />
-              <div className="connector-arrow">▼ Kafka Fanout Consumer Group</div>
-            </div>
-
-            {/* Downstream Services Row */}
-            <div className="downstream-services-grid">
-              {DOWNSTREAM_SERVICES.map((svc) => (
-                <div
-                  key={svc.id}
-                  className={`downstream-card downstream-${svc.type} ${activeStep === 'downstream' ? 'downstream-active' : ''}`}
-                  onClick={() => setSelectedNode({
-                    title: svc.title,
-                    subtitle: svc.subtitle,
-                    badge: svc.type.toUpperCase(),
-                    icon: svc.icon,
-                    desc: `Asynchronous subscriber listening on Kafka topics for tenant billing and orchestration.`
-                  })}
+          {/* Quick Node Selector Pills */}
+          <div className="quick-node-selector glass-panel mt-3 p-3 flex flex-wrap gap-2 items-center justify-between">
+            <span className="text-[11px] font-mono text-slate-400 font-bold uppercase tracking-wider">
+              Quick Focus:
+            </span>
+            <div className="flex flex-wrap gap-1.5">
+              {PIPELINE_3D_NODES.map((node) => (
+                <button
+                  key={node.id}
+                  className={`px-2.5 py-1 rounded text-[11px] font-mono transition-all ${
+                    selectedNode?.id === node.id
+                      ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/50 shadow-[0_0_10px_rgba(6,182,212,0.3)]'
+                      : 'bg-slate-800/50 text-slate-400 border border-slate-700/50 hover:text-slate-200 hover:border-slate-600'
+                  }`}
+                  onClick={() => setSelectedNode(node)}
                 >
-                  <div className="downstream-icon">{svc.icon}</div>
-                  <h4 className="downstream-title">{svc.title}</h4>
-                  <p className="downstream-subtitle">{svc.subtitle}</p>
-                </div>
+                  {node.icon} {node.title.split('. ')[1] || node.title}
+                </button>
               ))}
-            </div>
-
-            {/* Failure / Dunning State */}
-            <div className="dunning-loop-card">
-              <div className="dunning-loop-header">
-                <span className="dunning-tag">Failure Path</span>
-                <span className="dunning-title">PAST_DUE → SUSPENDED</span>
-              </div>
-              <p className="dunning-desc">
-                If all 3 retry attempts fail, Dunning scheduler transitions subscription to SUSPENDED and publishes a new Outbox Event.
-              </p>
             </div>
           </div>
         </div>
@@ -293,7 +167,7 @@ export default function PipelineVisualizer({ onTriggerToast }) {
           </div>
 
           <div className="legend-card glass-panel">
-            <h4 className="legend-title">Pipeline Legend</h4>
+            <h4 className="legend-title">Pipeline Legend & Stream Nodes</h4>
             <div className="legend-items">
               <div className="legend-row">
                 <span className="legend-dot dot-core" />

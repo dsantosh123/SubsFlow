@@ -18,12 +18,12 @@ export default function ChangePlanForm({ apiKey, subscriptions, plans, addLog, o
   // Estimate proration (e.g. 50% remaining for live preview)
   const prorationEstimate = useMemo(() => {
     if (!currentPlan || !targetPlan) return null;
-    const oldPrice = parseFloat(currentPlan.price || 0);
-    const newPrice = parseFloat(targetPlan.price || 0);
+    const oldPrice = parseFloat(currentPlan.price || 0) || 0;
+    const newPrice = parseFloat(targetPlan.price || 0) || 0;
     // Assuming mid-period (approx 50% unused)
-    const credit = +(oldPrice * 0.5).toFixed(2);
-    const charge = +(newPrice * 0.5).toFixed(2);
-    const net = +(charge - credit).toFixed(2);
+    const credit = Number(oldPrice * 0.5) || 0;
+    const charge = Number(newPrice * 0.5) || 0;
+    const net = Number(charge - credit) || 0;
     return {
       credit,
       charge,
@@ -131,15 +131,15 @@ export default function ChangePlanForm({ apiKey, subscriptions, plans, addLog, o
             <div className="proration-grid">
               <div className="proration-item">
                 <span className="p-label">Unused Time Credit:</span>
-                <span className="p-value credit-text">-${prorationEstimate.credit.toFixed(2)}</span>
+                <span className="p-value credit-text">-${(Number(prorationEstimate.credit) || 0).toFixed(2)}</span>
               </div>
               <div className="proration-item">
                 <span className="p-label">New Plan Charge:</span>
-                <span className="p-value">+${prorationEstimate.charge.toFixed(2)}</span>
+                <span className="p-value">+${(Number(prorationEstimate.charge) || 0).toFixed(2)}</span>
               </div>
               <div className="proration-item proration-total">
                 <span className="p-label">Estimated Net Due:</span>
-                <span className="p-value total-text">${prorationEstimate.net.toFixed(2)}</span>
+                <span className="p-value total-text">${(Number(prorationEstimate.net) || 0).toFixed(2)}</span>
               </div>
             </div>
           </div>

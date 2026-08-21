@@ -106,7 +106,7 @@ public class BillingCycleServiceImpl implements BillingCycleService {
             flatItem.setPlan(plan);
             flatItem.setType(InvoiceLineItemType.FLAT);
             flatItem.setAmount(plan.getPrice());
-            flatItem.setDescription("Monthly subscription: " + plan.getName());
+            flatItem.setDescription(plan.getBillingPeriod() + " subscription: " + plan.getName());
             invoiceLineItemRepository.save(flatItem);
             totalAmount = totalAmount.add(plan.getPrice());
         }
@@ -167,10 +167,17 @@ public class BillingCycleServiceImpl implements BillingCycleService {
         OffsetDateTime newStart = oldEnd;
         OffsetDateTime newEnd;
 
-        switch (subscription.getPlan().getBillingPeriod()) {
-            case MONTHLY -> newEnd = oldEnd.plusMonths(1);
-            case YEARLY -> newEnd = oldEnd.plusYears(1);
-            default -> newEnd = oldEnd.plusMonths(1);
+        if (subscription.getPlan() != null && subscription.getPlan().getBillingPeriod() != null) {
+            switch (subscription.getPlan().getBillingPeriod()) {
+                case MINUTE -> newEnd = oldEnd.plus(1, java.time.temporal.ChronoUnit.MINUTES);
+                case HOURLY -> newEnd = oldEnd.plus(1, java.time.temporal.ChronoUnit.HOURS);
+                case DAILY -> newEnd = oldEnd.plus(1, java.time.temporal.ChronoUnit.DAYS);
+                case MONTHLY -> newEnd = oldEnd.plusMonths(1);
+                case YEARLY -> newEnd = oldEnd.plusYears(1);
+                default -> newEnd = oldEnd.plusMonths(1);
+            }
+        } else {
+            newEnd = oldEnd.plusMonths(1);
         }
 
         subscription.setCurrentPeriodStart(newStart);

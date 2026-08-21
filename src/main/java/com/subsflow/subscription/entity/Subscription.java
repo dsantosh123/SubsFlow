@@ -16,7 +16,7 @@ public class Subscription extends AbstractTenantEntity {
     @Id
     private String id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "plan_id", nullable = false)
     private BillingPlan plan;
 

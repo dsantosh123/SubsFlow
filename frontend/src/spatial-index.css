@@ -1,0 +1,185 @@
+@import "tailwindcss";
+
+/* ═══════════════════════════════════════════════════════════
+   SubsFlow 4D Spatial Design System — Theme Configuration
+   Tailwind v4 uses CSS-based @theme instead of tailwind.config.js
+   ═══════════════════════════════════════════════════════════ */
+
+@theme {
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  /* Core Palette */
+  --color-obsidian: #030712;
+  --color-cyber-indigo: #6366f1;
+  --color-cyber-cyan: #06b6d4;
+  --color-cyber-emerald: #10b981;
+  --color-cyber-amber: #f59e0b;
+  --color-cyber-rose: #f43f5e;
+
+  /* Spatial scale */
+  --color-spatial-50: #f0f1fe;
+  --color-spatial-100: #e0e1fd;
+  --color-spatial-200: #c7c8fb;
+  --color-spatial-300: #a5a6f8;
+  --color-spatial-400: #8183f4;
+  --color-spatial-500: #6366f1;
+  --color-spatial-600: #4f46e5;
+  --color-spatial-700: #4338ca;
+  --color-spatial-800: #3730a3;
+  --color-spatial-900: #312e81;
+  --color-spatial-950: #1e1b4b;
+
+  /* Neon Shadows */
+  --shadow-neon-cyan: 0 0 20px rgba(6, 182, 212, 0.35), 0 0 60px rgba(6, 182, 212, 0.1);
+  --shadow-neon-indigo: 0 0 25px rgba(99, 102, 241, 0.4), 0 0 80px rgba(99, 102, 241, 0.15);
+  --shadow-neon-emerald: 0 0 20px rgba(16, 185, 129, 0.35);
+  --shadow-neon-amber: 0 0 20px rgba(245, 158, 11, 0.35);
+  --shadow-neon-rose: 0 0 20px rgba(244, 63, 94, 0.35);
+  --shadow-spatial-card: 0 20px 50px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+  --shadow-spatial-hover: 0 30px 70px rgba(0, 0, 0, 0.7), inset 0 1px 2px rgba(255, 255, 255, 0.15);
+
+  /* Animations */
+  --animate-pulse-neon: pulse-neon 3s ease-in-out infinite;
+  --animate-float-slow: float-slow 6s ease-in-out infinite;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Base Styles
+   ═══════════════════════════════════════════════════════════ */
+
+@layer base {
+  body {
+    @apply bg-obsidian text-gray-100 font-sans antialiased;
+    overflow-x: hidden;
+  }
+
+  ::selection {
+    background: rgba(99, 102, 241, 0.4);
+    color: #fff;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: rgba(3, 7, 18, 0.5);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(99, 102, 241, 0.35);
+    border-radius: 8px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(99, 102, 241, 0.55);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Spatial Component Utilities
+   ═══════════════════════════════════════════════════════════ */
+
+@layer components {
+  /* Glass morphism panel for 3D spatial cards */
+  .spatial-glass {
+    @apply relative rounded-2xl border border-white/[0.07];
+    background: linear-gradient(
+      135deg,
+      rgba(15, 23, 42, 0.85) 0%,
+      rgba(30, 27, 75, 0.65) 50%,
+      rgba(15, 23, 42, 0.8) 100%
+    );
+    backdrop-filter: blur(20px) saturate(1.6);
+    -webkit-backdrop-filter: blur(20px) saturate(1.6);
+  }
+
+  .spatial-glass::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(
+      135deg,
+      rgba(99, 102, 241, 0.25) 0%,
+      transparent 40%,
+      transparent 60%,
+      rgba(6, 182, 212, 0.2) 100%
+    );
+    -webkit-mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  /* Neon glow border animation */
+  .neon-border-indigo {
+    box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.2),
+                0 0 20px rgba(99, 102, 241, 0.12),
+                inset 0 0 20px rgba(99, 102, 241, 0.05);
+  }
+
+  .neon-border-cyan {
+    box-shadow: 0 0 0 1px rgba(6, 182, 212, 0.2),
+                0 0 20px rgba(6, 182, 212, 0.12),
+                inset 0 0 20px rgba(6, 182, 212, 0.05);
+  }
+
+  /* Portal status indicator dot */
+  .status-dot {
+    @apply w-2 h-2 rounded-full;
+    animation: status-pulse 2s ease-in-out infinite;
+  }
+
+  .status-dot-active {
+    @apply bg-cyber-emerald;
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+  }
+
+  .status-dot-warning {
+    @apply bg-cyber-amber;
+    box-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
+  }
+
+  .status-dot-error {
+    @apply bg-cyber-rose;
+    box-shadow: 0 0 8px rgba(244, 63, 94, 0.6);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Keyframe Animations
+   ═══════════════════════════════════════════════════════════ */
+
+@keyframes status-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(0.85); }
+}
+
+@keyframes pulse-neon {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes spatial-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Utility for fade-in on mount */
+.spatial-fade-in {
+  animation: spatial-fade-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}

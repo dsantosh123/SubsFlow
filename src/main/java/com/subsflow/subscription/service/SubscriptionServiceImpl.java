@@ -186,8 +186,19 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                 .orElseThrow(() -> new IllegalArgumentException("Billing plan not found: " + planId));
 
         OffsetDateTime now = OffsetDateTime.now();
-        OffsetDateTime periodEnd = plan.getBillingPeriod() == com.subsflow.subscription.entity.BillingPeriod.YEARLY
-                ? now.plusYears(1) : now.plusMonths(1);
+        OffsetDateTime periodEnd;
+        if (plan.getBillingPeriod() != null) {
+            switch (plan.getBillingPeriod()) {
+                case MINUTE -> periodEnd = now.plus(1, java.time.temporal.ChronoUnit.MINUTES);
+                case HOURLY -> periodEnd = now.plus(1, java.time.temporal.ChronoUnit.HOURS);
+                case DAILY -> periodEnd = now.plus(1, java.time.temporal.ChronoUnit.DAYS);
+                case MONTHLY -> periodEnd = now.plusMonths(1);
+                case YEARLY -> periodEnd = now.plusYears(1);
+                default -> periodEnd = now.plusMonths(1);
+            }
+        } else {
+            periodEnd = now.plusMonths(1);
+        }
 
         Subscription subscription = new Subscription();
         subscription.setId("sub_" + UUID.randomUUID().toString().substring(0, 8));

@@ -110,20 +110,21 @@ export default function Dashboard({ tenant, addLog, onTriggerToast }) {
   // Derived Metrics
   const metrics = useMemo(() => {
     const activeSubs = subscriptions.filter((s) => s.status === 'ACTIVE').length;
-    const totalInvoiced = invoices.reduce((sum, inv) => sum + parseFloat(inv.amount || 0), 0);
+    const totalInvoiced = invoices.reduce((sum, inv) => sum + (parseFloat(inv.amount) || 0), 0);
     const mrr = subscriptions
       .filter((s) => s.status === 'ACTIVE')
       .reduce((sum, s) => {
-        const p = s.plan?.price || 0;
+        const p = parseFloat(s.plan?.price || 0) || 0;
         const period = s.plan?.billingPeriod;
-        return sum + (period === 'YEARLY' ? p / 12 : p);
+        const monthlyEquivalent = period === 'YEARLY' ? p / 12 : period === 'HOURLY' ? p * 720 : period === 'MINUTE' ? p * 43200 : period === 'DAILY' ? p * 30 : p;
+        return sum + monthlyEquivalent;
       }, 0);
 
     return {
       activeSubs,
       totalSubs: subscriptions.length,
-      totalInvoiced: totalInvoiced.toFixed(2),
-      mrr: mrr.toFixed(2),
+      totalInvoiced: (Number(totalInvoiced) || 0).toFixed(2),
+      mrr: (Number(mrr) || 0).toFixed(2),
       invoiceCount: invoices.length,
     };
   }, [subscriptions, invoices]);
@@ -211,16 +212,23 @@ export default function Dashboard({ tenant, addLog, onTriggerToast }) {
           <div className="tab-plans-layout">
             <div className="plans-subs-grid">
               <PlansPanel
+                apiKey={apiKey}
                 plans={plans}
                 loading={loadingPlans}
                 onRefresh={fetchPlans}
                 onSubscribe={handleSubscribe}
+                addLog={addLog}
+                onTriggerToast={onTriggerToast}
               />
               <SubscriptionsPanel
                 subscriptions={subscriptions}
                 loading={loadingSubs}
                 onRefresh={fetchSubscriptions}
                 onCancel={handleCancel}
+                onMatured={() => {
+                  fetchSubscriptions();
+                  fetchInvoices();
+                }}
               />
             </div>
 

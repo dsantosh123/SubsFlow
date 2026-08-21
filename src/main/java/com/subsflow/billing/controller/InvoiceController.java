@@ -4,11 +4,11 @@ import com.subsflow.billing.entity.Invoice;
 import com.subsflow.billing.entity.InvoiceLineItem;
 import com.subsflow.billing.repository.InvoiceRepository;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
@@ -22,6 +22,7 @@ public class InvoiceController {
     }
 
     @GetMapping
+    @Transactional(readOnly = true)
     public ResponseEntity<List<InvoiceSummaryResponse>> listInvoices() {
         List<InvoiceSummaryResponse> invoices = invoiceRepository.findAll().stream()
                 .map(InvoiceSummaryResponse::from)
@@ -30,6 +31,7 @@ public class InvoiceController {
     }
 
     @GetMapping("/{id}")
+    @Transactional(readOnly = true)
     public ResponseEntity<?> getInvoice(@PathVariable("id") String id) {
         return invoiceRepository.findById(id)
                 .map(inv -> ResponseEntity.ok(InvoiceDetailResponse.from(inv)))
@@ -48,7 +50,7 @@ public class InvoiceController {
             InvoiceSummaryResponse dto = new InvoiceSummaryResponse();
             dto.id = invoice.getId();
             dto.subscriptionId = invoice.getSubscription() != null ? invoice.getSubscription().getId() : null;
-            dto.status = invoice.getStatus().name();
+            dto.status = invoice.getStatus() != null ? invoice.getStatus().name() : null;
             dto.amount = invoice.getAmount();
             dto.dueDate = invoice.getDueDate() != null ? invoice.getDueDate().toString() : null;
             dto.createdAt = invoice.getCreatedAt() != null ? invoice.getCreatedAt().toString() : null;
@@ -70,13 +72,15 @@ public class InvoiceController {
             InvoiceDetailResponse dto = new InvoiceDetailResponse();
             dto.id = invoice.getId();
             dto.subscriptionId = invoice.getSubscription() != null ? invoice.getSubscription().getId() : null;
-            dto.status = invoice.getStatus().name();
+            dto.status = invoice.getStatus() != null ? invoice.getStatus().name() : null;
             dto.amount = invoice.getAmount();
             dto.dueDate = invoice.getDueDate() != null ? invoice.getDueDate().toString() : null;
             dto.createdAt = invoice.getCreatedAt() != null ? invoice.getCreatedAt().toString() : null;
-            dto.lineItems = invoice.getLineItems().stream()
-                    .map(LineItemResponse::from)
-                    .collect(Collectors.toList());
+            if (invoice.getLineItems() != null) {
+                dto.lineItems = invoice.getLineItems().stream()
+                        .map(LineItemResponse::from)
+                        .collect(Collectors.toList());
+            }
             return dto;
         }
 
@@ -93,7 +97,7 @@ public class InvoiceController {
         public static LineItemResponse from(InvoiceLineItem item) {
             LineItemResponse dto = new LineItemResponse();
             dto.id = item.getId();
-            dto.type = item.getType().name();
+            dto.type = item.getType() != null ? item.getType().name() : null;
             dto.amount = item.getAmount();
             dto.description = item.getDescription();
             dto.planId = item.getPlan() != null ? item.getPlan().getId() : null;

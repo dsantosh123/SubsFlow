@@ -12,6 +12,7 @@ import com.subsflow.subscription.service.SubscriptionService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -19,6 +20,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @RestController
@@ -44,6 +46,7 @@ public class SubscriptionController {
     }
 
     @GetMapping
+    @Transactional(readOnly = true)
     public ResponseEntity<List<SubscriptionSummaryResponse>> listSubscriptions() {
         List<SubscriptionSummaryResponse> subscriptions = subscriptionRepository.findAll().stream()
                 .map(SubscriptionSummaryResponse::from)
@@ -52,11 +55,33 @@ public class SubscriptionController {
     }
 
     @GetMapping("/plans")
+    @Transactional(readOnly = true)
     public ResponseEntity<List<BillingPlanResponse>> listPlans() {
         List<BillingPlanResponse> plans = billingPlanRepository.findAll().stream()
                 .map(BillingPlanResponse::from)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(plans);
+    }
+
+    @PostMapping("/plans")
+    public ResponseEntity<?> createPlan(@RequestBody CreatePlanRequest request) {
+        if (request.getName() == null || request.getBillingType() == null || request.getBillingPeriod() == null || request.getPrice() == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Missing required fields (name, billingType, billingPeriod, price)"));
+        }
+        try {
+            BillingPlan plan = new BillingPlan();
+            plan.setId("plan-" + UUID.randomUUID().toString().substring(0, 8));
+            plan.setName(request.getName());
+            plan.setBillingType(com.subsflow.subscription.entity.BillingType.valueOf(request.getBillingType()));
+            plan.setBillingPeriod(com.subsflow.subscription.entity.BillingPeriod.valueOf(request.getBillingPeriod()));
+            plan.setPrice(request.getPrice());
+            plan.setTenantId(com.subsflow.common.context.TenantContext.getTenantId());
+            plan.setVersion(0L);
+            BillingPlan saved = billingPlanRepository.save(plan);
+            return ResponseEntity.ok(BillingPlanResponse.from(saved));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
+        }
     }
 
     @PostMapping
@@ -174,15 +199,19 @@ public class SubscriptionController {
         private String planName;
         private String currentPeriodStart;
         private String currentPeriodEnd;
+        private Long version;
+        private BillingPlanResponse plan;
 
         public static SubscriptionSummaryResponse from(Subscription subscription) {
             SubscriptionSummaryResponse dto = new SubscriptionSummaryResponse();
             dto.id = subscription.getId();
-            dto.status = subscription.getStatus().name();
+            dto.status = subscription.getStatus() != null ? subscription.getStatus().name() : null;
+            dto.version = subscription.getVersion();
             BillingPlan plan = subscription.getPlan();
             if (plan != null) {
                 dto.planId = plan.getId();
                 dto.planName = plan.getName();
+                dto.plan = BillingPlanResponse.from(plan);
             }
             dto.currentPeriodStart = subscription.getCurrentPeriodStart() == null ? null : subscription.getCurrentPeriodStart().toString();
             dto.currentPeriodEnd = subscription.getCurrentPeriodEnd() == null ? null : subscription.getCurrentPeriodEnd().toString();
@@ -195,6 +224,8 @@ public class SubscriptionController {
         public String getPlanName() { return planName; }
         public String getCurrentPeriodStart() { return currentPeriodStart; }
         public String getCurrentPeriodEnd() { return currentPeriodEnd; }
+        public Long getVersion() { return version; }
+        public BillingPlanResponse getPlan() { return plan; }
     }
 
     public static class BillingPlanResponse {
@@ -208,9 +239,9 @@ public class SubscriptionController {
             BillingPlanResponse dto = new BillingPlanResponse();
             dto.id = plan.getId();
             dto.name = plan.getName();
-            dto.billingType = plan.getBillingType().name();
-            dto.billingPeriod = plan.getBillingPeriod().name();
-            dto.price = plan.getPrice().toPlainString();
+            dto.billingType = plan.getBillingType() != null ? plan.getBillingType().name() : null;
+            dto.billingPeriod = plan.getBillingPeriod() != null ? plan.getBillingPeriod().name() : null;
+            dto.price = plan.getPrice() != null ? plan.getPrice().toPlainString() : "0.00";
             return dto;
         }
 
@@ -219,6 +250,22 @@ public class SubscriptionController {
         public String getBillingType() { return billingType; }
         public String getBillingPeriod() { return billingPeriod; }
         public String getPrice() { return price; }
+    }
+
+    public static class CreatePlanRequest {
+        private String name;
+        private String billingType;
+        private String billingPeriod;
+        private BigDecimal price;
+
+        public String getName() { return name; }
+        public void setName(String name) { this.name = name; }
+        public String getBillingType() { return billingType; }
+        public void setBillingType(String billingType) { this.billingType = billingType; }
+        public String getBillingPeriod() { return billingPeriod; }
+        public void setBillingPeriod(String billingPeriod) { this.billingPeriod = billingPeriod; }
+        public BigDecimal getPrice() { return price; }
+        public void setPrice(BigDecimal price) { this.price = price; }
     }
 
     public static class ChangePlanRequest {

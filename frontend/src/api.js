@@ -125,6 +125,14 @@ export function listPlans(apiKey) {
   });
 }
 
+export function createPlan(apiKey, { name, billingType, billingPeriod, price }) {
+  return request('/subscriptions/plans', {
+    method: 'POST',
+    headers: apiKey ? { 'X-API-Key': apiKey } : {},
+    body: JSON.stringify({ name, billingType, billingPeriod, price: parseFloat(price) }),
+  });
+}
+
 export function changePlan(apiKey, subscriptionId, newPlanId, paymentMethodId, idempotencyKey) {
   return request(`/subscriptions/${subscriptionId}/change-plan`, {
     method: 'POST',
