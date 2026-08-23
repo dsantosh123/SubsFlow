@@ -16,6 +16,7 @@ com\subsflow\admin\dto\AuditLogResponse.class
 com\subsflow\admin\service\AdminDashboardService.class
 com\subsflow\payment\entity\PaymentTransaction.class
 com\subsflow\tenant\controller\TenantController.class
+com\subsflow\tenant\repository\TenantUserRepository.class
 com\subsflow\payment\entity\IdempotencyKeyStatus.class
 com\subsflow\billing\repository\InvoiceLineItemRepository.class
 com\subsflow\subscription\entity\BillingPlan.class
@@ -44,6 +45,8 @@ com\subsflow\payment\service\PaymentServiceImpl.class
 com\subsflow\payment\entity\IdempotencyKey.class
 com\subsflow\tenant\repository\TenantRepository.class
 com\subsflow\admin\service\AdminAuditService.class
+com\subsflow\tenant\controller\TenantUserController$RegisterRequest.class
+com\subsflow\tenant\controller\TenantUserController.class
 com\subsflow\subscription\repository\BillingPlanRepository.class
 com\subsflow\subscription\entity\BillingType.class
 com\subsflow\subscription\controller\SubscriptionController$IngestUsageRequest.class
@@ -71,9 +74,12 @@ com\subsflow\billing\scheduler\BillingCycleScheduler.class
 com\subsflow\admin\entity\PlatformAdmin.class
 com\subsflow\common\config\CorsConfig.class
 com\subsflow\common\config\RedisCacheConfig.class
+com\subsflow\tenant\entity\TenantUser.class
 com\subsflow\payment\entity\PaymentStatus.class
 com\subsflow\dunning\service\DunningScheduler.class
 com\subsflow\admin\dto\AdminLoginResponse.class
+com\subsflow\admin\controller\AdminController.class
+com\subsflow\tenant\controller\TenantUserController$LoginRequest.class
 com\subsflow\subscription\entity\Subscription.class
 com\subsflow\subscription\service\SubscriptionStatusTransition.class
 com\subsflow\payment\entity\IdempotencyKeyId.class
@@ -82,13 +88,16 @@ com\subsflow\common\outbox\NotificationStubConsumer.class
 com\subsflow\subscription\controller\SubscriptionController$SubscriptionSummaryResponse.class
 com\subsflow\common\security\JwtService.class
 com\subsflow\subscription\controller\SubscriptionController$BillingPlanResponse.class
+com\subsflow\tenant\service\TenantAuthService.class
 com\subsflow\admin\service\AdminAuthService.class
 com\subsflow\common\exception\IdempotencyConflictException.class
 com\subsflow\admin\dto\TenantStatusUpdateRequest.class
 com\subsflow\tenant\entity\TenantStatus.class
+com\subsflow\tenant\controller\TenantUserController$InviteRequest.class
 com\subsflow\common\entity\OutboxEvent.class
 com\subsflow\admin\dto\DashboardStatsResponse.class
 com\subsflow\payment\service\IdempotencyServiceImpl.class
 com\subsflow\subscription\controller\SubscriptionController$CreateSubscriptionRequest.class
 com\subsflow\subscription\service\SubscriptionServiceImpl$1.class
 com\subsflow\payment\gateway\ChargeResponse.class
+com\subsflow\tenant\entity\TenantRole.class

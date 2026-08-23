@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Layers, Users, CreditCard, Settings, BarChart3 } from 'lucide-react';
 import { usePortal } from '../../context/PortalContext';
@@ -7,6 +7,8 @@ import TiltCard3D from '../3d/TiltCard3D';
 import TopbarHUD from './TopbarHUD';
 import AdminLoginScreen from '../admin/AdminLoginScreen';
 import AdminLayout from '../admin/AdminLayout';
+import TenantDashboard from '../tenant/TenantDashboard';
+import TeamManagement from '../tenant/TeamManagement';
 import { clearStoredAdminAuth } from '../../adminApi';
 
 /* ─────────────────────────────────────────────────────────
@@ -68,6 +70,7 @@ export default function PortalLayout({
   showToast,
 }) {
   const { activePortal, portal, adminSession, setAdminSession, clearAdminSession } = usePortal();
+  const [tenantSubview, setTenantSubview] = useState('dashboard');
 
   const portalContent = useMemo(() => {
     switch (activePortal) {
@@ -97,11 +100,25 @@ export default function PortalLayout({
         );
       case 'CUSTOMER':
         return <CustomerPanel />;
+      case 'TENANT_WORKSPACE':
+        return tenantSubview === 'dashboard' ? (
+          <TenantDashboard
+            addLog={addLog}
+            onTriggerToast={showToast}
+            onNavigateToTeam={() => setTenantSubview('team')}
+          />
+        ) : (
+          <TeamManagement
+            addLog={addLog}
+            onTriggerToast={showToast}
+            onBack={() => setTenantSubview('dashboard')}
+          />
+        );
       case 'MERCHANT':
       default:
         return children; // Existing Dashboard + ApiLog components
     }
-  }, [activePortal, children, adminSession, setAdminSession, clearAdminSession, addLog, showToast]);
+  }, [activePortal, children, adminSession, setAdminSession, clearAdminSession, addLog, showToast, tenantSubview]);
 
   return (
     <div className="relative min-h-screen">

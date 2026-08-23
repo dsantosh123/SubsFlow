@@ -76,6 +76,11 @@ C:\Users\sdona\Downloads\Springboot_Project\SubsFlow\src\main\java\com\subsflow\
 C:\Users\sdona\Downloads\Springboot_Project\SubsFlow\src\main\java\com\subsflow\subscription\service\SubscriptionStatusTransition.java
 C:\Users\sdona\Downloads\Springboot_Project\SubsFlow\src\main\java\com\subsflow\SubsFlowApplication.java
 C:\Users\sdona\Downloads\Springboot_Project\SubsFlow\src\main\java\com\subsflow\tenant\controller\TenantController.java
+C:\Users\sdona\Downloads\Springboot_Project\SubsFlow\src\main\java\com\subsflow\tenant\controller\TenantUserController.java
 C:\Users\sdona\Downloads\Springboot_Project\SubsFlow\src\main\java\com\subsflow\tenant\entity\Tenant.java
+C:\Users\sdona\Downloads\Springboot_Project\SubsFlow\src\main\java\com\subsflow\tenant\entity\TenantRole.java
 C:\Users\sdona\Downloads\Springboot_Project\SubsFlow\src\main\java\com\subsflow\tenant\entity\TenantStatus.java
+C:\Users\sdona\Downloads\Springboot_Project\SubsFlow\src\main\java\com\subsflow\tenant\entity\TenantUser.java
 C:\Users\sdona\Downloads\Springboot_Project\SubsFlow\src\main\java\com\subsflow\tenant\repository\TenantRepository.java
+C:\Users\sdona\Downloads\Springboot_Project\SubsFlow\src\main\java\com\subsflow\tenant\repository\TenantUserRepository.java
+C:\Users\sdona\Downloads\Springboot_Project\SubsFlow\src\main\java\com\subsflow\tenant\service\TenantAuthService.java

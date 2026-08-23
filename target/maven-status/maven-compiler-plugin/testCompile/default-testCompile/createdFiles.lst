@@ -5,3 +5,4 @@ com\subsflow\tenant\TenantIsolationTest.class
 com\subsflow\subscription\SubscriptionOptimisticLockingTest.class
 com\subsflow\subscription\SubscriptionStatusTransitionTest.class
 com\subsflow\payment\IdempotencyServiceTest.class
+com\subsflow\security\AdminJwtTest.class

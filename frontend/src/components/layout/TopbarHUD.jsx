@@ -3,7 +3,7 @@ import { Activity, LogOut, Shield, Zap, Radio } from 'lucide-react';
 import { usePortal, PORTALS } from '../../context/PortalContext';
 import TiltCard3D from '../3d/TiltCard3D';
 
-const portalList = [PORTALS.SUPER_ADMIN, PORTALS.MERCHANT, PORTALS.CUSTOMER];
+const portalList = [PORTALS.TENANT_WORKSPACE, PORTALS.MERCHANT, PORTALS.SUPER_ADMIN, PORTALS.CUSTOMER];
 
 function LatencyBadge({ latency }) {
   let colorClass = 'text-cyber-emerald';

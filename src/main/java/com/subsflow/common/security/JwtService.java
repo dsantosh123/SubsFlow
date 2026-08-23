@@ -45,6 +45,20 @@ public class JwtService {
         return buildToken(extraClaims, tenant.getId(), jwtExpirationMs);
     }
 
+    public String generateTenantUserToken(com.subsflow.tenant.entity.TenantUser user) {
+        Map<String, Object> extraClaims = new HashMap<>();
+        extraClaims.put("tenantId", user.getTenant().getId());
+        extraClaims.put("tenantName", user.getTenant().getName());
+        extraClaims.put("apiKey", user.getTenant().getApiKey());
+        extraClaims.put("status", user.getTenant().getStatus() != null ? user.getTenant().getStatus().name() : "ACTIVE");
+        extraClaims.put("userId", user.getId());
+        extraClaims.put("email", user.getEmail());
+        extraClaims.put("name", user.getName());
+        extraClaims.put("role", "ROLE_TENANT_" + user.getRole().name());
+
+        return buildToken(extraClaims, user.getTenant().getId(), jwtExpirationMs);
+    }
+
     public String generateAdminToken(PlatformAdmin admin) {
         Map<String, Object> extraClaims = new HashMap<>();
         extraClaims.put("adminId", admin.getId());
@@ -71,6 +85,18 @@ public class JwtService {
 
     public String extractRole(String token) {
         return extractClaim(token, claims -> claims.get("role", String.class));
+    }
+
+    public String extractUserId(String token) {
+        return extractClaim(token, claims -> claims.get("userId", String.class));
+    }
+
+    public String extractEmail(String token) {
+        return extractClaim(token, claims -> claims.get("email", String.class));
+    }
+
+    public String extractName(String token) {
+        return extractClaim(token, claims -> claims.get("name", String.class));
     }
 
     public String extractAdminEmail(String token) {

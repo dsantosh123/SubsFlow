@@ -1,5 +1,6 @@
 import { createContext, useContext, useReducer, useCallback, useEffect } from 'react';
 import { getStoredAdmin } from '../adminApi';
+import { getStoredUser } from '../tenantAuthApi';
 
 /* ─────────────────────────────────────────────────────────
    Portal Types
@@ -13,13 +14,21 @@ export const PORTALS = {
     color: '#f43f5e',
     description: 'Global Operations & Tenant Management Console',
   },
+  TENANT_WORKSPACE: {
+    id: 'TENANT_WORKSPACE',
+    label: 'Tenant Portal',
+    path: '/',
+    icon: '🏢',
+    color: '#3b82f6',
+    description: 'Tenant Workspace — Onboarding & Team Management',
+  },
   MERCHANT: {
     id: 'MERCHANT',
-    label: 'Merchant',
-    path: '/workspace',
-    icon: '🏢',
+    label: 'API Key Access',
+    path: '/api-access',
+    icon: '🔑',
     color: '#6366f1',
-    description: 'Subscription & Billing Workspace',
+    description: 'Legacy API Key Workspace — Subscriptions & Billing',
   },
   CUSTOMER: {
     id: 'CUSTOMER',
@@ -35,8 +44,11 @@ export const PORTALS = {
    State Shape & Reducer
    ───────────────────────────────────────────────────────── */
 const initialState = {
-  activePortal: window.location.pathname === '/admin' ? PORTALS.SUPER_ADMIN.id : PORTALS.MERCHANT.id,
+  activePortal: window.location.pathname === '/admin'
+    ? PORTALS.SUPER_ADMIN.id
+    : (window.location.pathname === '/api-access' ? PORTALS.MERCHANT.id : PORTALS.TENANT_WORKSPACE.id),
   tenantSession: null, // { tenantId, name, apiKey, token }
+  tenantUserSession: getStoredUser(), // { token, id, name, email, role, tenantId, tenantName, apiKey }
   adminSession: getStoredAdmin(), // { token, adminId, email, name }
   apiLatency: null,    // last measured latency in ms
 };
@@ -49,6 +61,10 @@ function portalReducer(state, action) {
       return { ...state, tenantSession: action.payload };
     case 'CLEAR_SESSION':
       return { ...state, tenantSession: null, apiLatency: null };
+    case 'SET_TENANT_USER_SESSION':
+      return { ...state, tenantUserSession: action.payload };
+    case 'CLEAR_TENANT_USER_SESSION':
+      return { ...state, tenantUserSession: null };
     case 'SET_ADMIN_SESSION':
       return { ...state, adminSession: action.payload };
     case 'CLEAR_ADMIN_SESSION':
@@ -80,7 +96,7 @@ export function PortalProvider({ children }) {
     const handlePopState = () => {
       const path = window.location.pathname;
       if (path === '/' || path === '') {
-        dispatch({ type: 'SWITCH_PORTAL', payload: PORTALS.MERCHANT.id });
+        dispatch({ type: 'SWITCH_PORTAL', payload: PORTALS.TENANT_WORKSPACE.id });
       } else {
         const foundPortal = Object.values(PORTALS).find((p) => p.path === path);
         if (foundPortal) {
@@ -98,6 +114,14 @@ export function PortalProvider({ children }) {
 
   const clearSession = useCallback(() => {
     dispatch({ type: 'CLEAR_SESSION' });
+  }, []);
+
+  const setTenantUserSession = useCallback((session) => {
+    dispatch({ type: 'SET_TENANT_USER_SESSION', payload: session });
+  }, []);
+
+  const clearTenantUserSession = useCallback(() => {
+    dispatch({ type: 'CLEAR_TENANT_USER_SESSION' });
   }, []);
 
   const setAdminSession = useCallback((session) => {
@@ -119,6 +143,8 @@ export function PortalProvider({ children }) {
     switchPortal,
     setTenantSession,
     clearSession,
+    setTenantUserSession,
+    clearTenantUserSession,
     setAdminSession,
     clearAdminSession,
     updateLatency,

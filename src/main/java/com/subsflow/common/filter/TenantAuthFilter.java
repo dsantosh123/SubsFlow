@@ -91,6 +91,15 @@ public class TenantAuthFilter extends OncePerRequestFilter {
                         writeErrorResponse(response, HttpStatus.UNAUTHORIZED, "Tenant associated with JWT token no longer exists");
                         return;
                     }
+                    
+                    // Extract tenant user details if present in claims
+                    String userId = jwtService.extractUserId(jwt);
+                    if (userId != null) {
+                        request.setAttribute("userId", userId);
+                        request.setAttribute("role", role != null ? role.replace("ROLE_TENANT_", "") : null);
+                        request.setAttribute("email", jwtService.extractEmail(jwt));
+                        request.setAttribute("name", jwtService.extractName(jwt));
+                    }
                 }
             } else {
                 writeErrorResponse(response, HttpStatus.UNAUTHORIZED, "Invalid or expired JWT token");
@@ -151,6 +160,10 @@ public class TenantAuthFilter extends OncePerRequestFilter {
 
         // Public tenant onboarding and login routes
         if (("/api/v1/tenants".equals(path) || "/api/v1/tenants/login".equals(path)) && ("POST".equalsIgnoreCase(method) || "OPTIONS".equalsIgnoreCase(method))) {
+            return true;
+        }
+        // Public tenant user registration and login routes
+        if (("/api/v1/tenant-auth/register".equals(path) || "/api/v1/tenant-auth/login".equals(path)) && ("POST".equalsIgnoreCase(method) || "OPTIONS".equalsIgnoreCase(method))) {
             return true;
         }
         // Actuator endpoints are public (health, prometheus, etc.)
