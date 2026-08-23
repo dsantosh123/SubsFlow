@@ -96,10 +96,10 @@ export default function TiltCard3D({
     : {};
 
   return (
-    <div style={containerStyle}>
+    <div style={containerStyle} className="w-full">
       <div
         ref={cardRef}
-        className={twMerge(clsx('spatial-glass relative overflow-hidden', className))}
+        className={twMerge(clsx('spatial-glass relative overflow-hidden w-full', className))}
         style={cardStyle}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
@@ -108,7 +108,7 @@ export default function TiltCard3D({
         <div style={specularStyle} />
 
         {/* Content with optional Z-depth */}
-        <div style={depthWrapperStyle} className="relative z-[5]">
+        <div style={depthWrapperStyle} className="relative z-[5] w-full">
           {children}
         </div>
       </div>

@@ -5,66 +5,13 @@ import { usePortal } from '../../context/PortalContext';
 import SpatialCanvas3D from '../3d/SpatialCanvas3D';
 import TiltCard3D from '../3d/TiltCard3D';
 import TopbarHUD from './TopbarHUD';
+import AdminLoginScreen from '../admin/AdminLoginScreen';
+import AdminLayout from '../admin/AdminLayout';
+import { clearStoredAdminAuth } from '../../adminApi';
 
 /* ─────────────────────────────────────────────────────────
    Portal Content Panels — Placeholder views for non-Merchant
    ───────────────────────────────────────────────────────── */
-
-function SuperAdminPanel() {
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-      <TiltCard3D glowColor="rgba(244, 63, 94, 0.25)" depth={8}>
-        <div className="p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-cyber-rose/15 flex items-center justify-center border border-cyber-rose/20">
-              <Users size={20} className="text-cyber-rose" />
-            </div>
-            <div>
-              <h3 className="text-sm font-semibold text-white">Tenant Registry</h3>
-              <p className="text-[11px] text-gray-500">Global multi-tenant operations</p>
-            </div>
-          </div>
-          <div className="space-y-3">
-            {['Tenant provisioning & lifecycle', 'RLS policy enforcement', 'API key rotation', 'Cross-tenant analytics'].map((item, i) => (
-              <div key={i} className="flex items-center gap-2 text-xs text-gray-400">
-                <div className="w-1.5 h-1.5 rounded-full bg-cyber-rose/50" />
-                {item}
-              </div>
-            ))}
-          </div>
-          <div className="mt-5 px-3 py-2 rounded-lg bg-cyber-rose/5 border border-cyber-rose/10 text-[11px] text-cyber-rose/70 font-mono">
-            Phase 2 — Full admin console with tenant CRUD, billing overrides & audit logs
-          </div>
-        </div>
-      </TiltCard3D>
-
-      <TiltCard3D glowColor="rgba(244, 63, 94, 0.25)" depth={8}>
-        <div className="p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-cyber-rose/15 flex items-center justify-center border border-cyber-rose/20">
-              <BarChart3 size={20} className="text-cyber-rose" />
-            </div>
-            <div>
-              <h3 className="text-sm font-semibold text-white">Platform Analytics</h3>
-              <p className="text-[11px] text-gray-500">Global system health & metrics</p>
-            </div>
-          </div>
-          <div className="space-y-3">
-            {['Revenue heatmaps across tenants', 'Dunning failure rates', 'Payment gateway health', 'Outbox processing latency'].map((item, i) => (
-              <div key={i} className="flex items-center gap-2 text-xs text-gray-400">
-                <div className="w-1.5 h-1.5 rounded-full bg-cyber-rose/50" />
-                {item}
-              </div>
-            ))}
-          </div>
-          <div className="mt-5 px-3 py-2 rounded-lg bg-cyber-rose/5 border border-cyber-rose/10 text-[11px] text-cyber-rose/70 font-mono">
-            Phase 2 — Real-time Prometheus dashboards & 3D globe visualization
-          </div>
-        </div>
-      </TiltCard3D>
-    </div>
-  );
-}
 
 function CustomerPanel() {
   return (
@@ -120,19 +67,41 @@ export default function PortalLayout({
   addLog,
   showToast,
 }) {
-  const { activePortal, portal } = usePortal();
+  const { activePortal, portal, adminSession, setAdminSession, clearAdminSession } = usePortal();
 
   const portalContent = useMemo(() => {
     switch (activePortal) {
       case 'SUPER_ADMIN':
-        return <SuperAdminPanel />;
+        if (!adminSession) {
+          return (
+            <AdminLoginScreen
+              onLogin={(adminData) => {
+                setAdminSession(adminData);
+                showToast('success', 'Operations Authentication Success', 'Access granted to Ops console.');
+              }}
+              addLog={addLog}
+            />
+          );
+        }
+        return (
+          <AdminLayout
+            admin={adminSession}
+            onLogout={() => {
+              clearStoredAdminAuth();
+              clearAdminSession();
+              showToast('info', 'Logged Out', 'Ops session terminated.');
+            }}
+            addLog={addLog}
+            onTriggerToast={showToast}
+          />
+        );
       case 'CUSTOMER':
         return <CustomerPanel />;
       case 'MERCHANT':
       default:
         return children; // Existing Dashboard + ApiLog components
     }
-  }, [activePortal, children]);
+  }, [activePortal, children, adminSession, setAdminSession, clearAdminSession, addLog, showToast]);
 
   return (
     <div className="relative min-h-screen">

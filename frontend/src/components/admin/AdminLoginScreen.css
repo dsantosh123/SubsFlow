@@ -1,0 +1,126 @@
+.admin-login-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: calc(100vh - 120px);
+  padding: 20px;
+}
+
+.admin-login-card {
+  width: 100%;
+  max-width: 480px;
+  padding: 36px 32px;
+  background: var(--bg-surface);
+  border: 1px solid rgba(244, 63, 94, 0.3); /* Cyber Rose border to highlight Operations */
+  border-radius: var(--radius-lg);
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.7), 0 0 30px rgba(244, 63, 94, 0.15);
+  text-align: center;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.admin-login-card:hover {
+  border-color: rgba(244, 63, 94, 0.6);
+  box-shadow: 0 0 45px rgba(0, 0, 0, 0.8), 0 0 35px rgba(244, 63, 94, 0.25);
+}
+
+.admin-login-logo-badge {
+  display: inline-flex;
+  margin-bottom: 16px;
+}
+
+.admin-login-title {
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+  margin-bottom: 4px;
+}
+
+.admin-login-desc {
+  font-size: 0.84rem;
+  color: var(--text-secondary);
+  margin-bottom: 24px;
+  line-height: 1.4;
+}
+
+.admin-login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  text-align: left;
+}
+
+.admin-quick-box {
+  background: var(--bg-subtle);
+  padding: 12px 14px;
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--border-subtle);
+}
+
+.admin-quick-title {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.admin-quick-chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.admin-chip {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(51, 65, 85, 0.7);
+  padding: 6px 12px;
+  border-radius: var(--radius-xs);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition);
+  font-family: inherit;
+}
+
+.admin-chip:hover {
+  border-color: var(--accent-rose);
+  color: #fda4af;
+}
+
+.admin-chip-active {
+  background: rgba(244, 63, 94, 0.25);
+  border-color: #fda4af;
+  color: #fda4af;
+  box-shadow: 0 0 10px rgba(244, 63, 94, 0.25);
+}
+
+.admin-login-error {
+  background: rgba(244, 63, 94, 0.15);
+  color: #fb7185;
+  padding: 8px 12px;
+  border-radius: var(--radius-xs);
+  font-size: 0.8rem;
+  border: 1px solid rgba(244, 63, 94, 0.35);
+}
+
+.admin-login-features-list {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.admin-feature-item {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #f43f5e;
+  font-family: 'JetBrains Mono', monospace;
+}

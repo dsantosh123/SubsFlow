@@ -1,6 +1,7 @@
 package com.subsflow.common.security;
 
 import com.subsflow.tenant.entity.Tenant;
+import com.subsflow.admin.entity.PlatformAdmin;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
@@ -44,6 +45,15 @@ public class JwtService {
         return buildToken(extraClaims, tenant.getId(), jwtExpirationMs);
     }
 
+    public String generateAdminToken(PlatformAdmin admin) {
+        Map<String, Object> extraClaims = new HashMap<>();
+        extraClaims.put("adminId", admin.getId());
+        extraClaims.put("adminEmail", admin.getEmail());
+        extraClaims.put("role", admin.getRole());
+
+        return buildToken(extraClaims, admin.getId(), jwtExpirationMs);
+    }
+
     private String buildToken(Map<String, Object> extraClaims, String subject, long expiration) {
         long now = System.currentTimeMillis();
         return Jwts.builder()
@@ -57,6 +67,14 @@ public class JwtService {
 
     public String extractTenantId(String token) {
         return extractClaim(token, Claims::getSubject);
+    }
+
+    public String extractRole(String token) {
+        return extractClaim(token, claims -> claims.get("role", String.class));
+    }
+
+    public String extractAdminEmail(String token) {
+        return extractClaim(token, claims -> claims.get("adminEmail", String.class));
     }
 
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {

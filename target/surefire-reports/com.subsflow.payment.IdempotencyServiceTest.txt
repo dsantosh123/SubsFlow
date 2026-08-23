@@ -1,8 +1,8 @@
 -------------------------------------------------------------------------------
 Test set: com.subsflow.payment.IdempotencyServiceTest
 -------------------------------------------------------------------------------
-Tests run: 1, Failures: 0, Errors: 1, Skipped: 0, Time elapsed: 1.256 s <<< FAILURE! -- in com.subsflow.payment.IdempotencyServiceTest
-com.subsflow.payment.IdempotencyServiceTest -- Time elapsed: 1.256 s <<< ERROR!
+Tests run: 1, Failures: 0, Errors: 1, Skipped: 0, Time elapsed: 1.705 s <<< FAILURE! -- in com.subsflow.payment.IdempotencyServiceTest
+com.subsflow.payment.IdempotencyServiceTest -- Time elapsed: 1.705 s <<< ERROR!
 java.lang.IllegalStateException: Could not find a valid Docker environment. Please see logs and check configuration
 	at org.testcontainers.dockerclient.DockerClientProviderStrategy.lambda$getFirstValidStrategy$7(DockerClientProviderStrategy.java:277)
 	at java.base/java.util.Optional.orElseThrow(Optional.java:403)

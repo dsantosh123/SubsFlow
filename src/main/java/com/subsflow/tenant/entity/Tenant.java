@@ -24,6 +24,12 @@ public class Tenant {
     @Column(name = "api_key", nullable = false, unique = true)
     private String apiKey;
 
+    @Column(name = "owner_name")
+    private String ownerName;
+
+    @Column(name = "contact_email")
+    private String contactEmail;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt = OffsetDateTime.now();
 

@@ -1,4 +1,5 @@
-import { createContext, useContext, useReducer, useCallback } from 'react';
+import { createContext, useContext, useReducer, useCallback, useEffect } from 'react';
+import { getStoredAdmin } from '../adminApi';
 
 /* ─────────────────────────────────────────────────────────
    Portal Types
@@ -34,8 +35,9 @@ export const PORTALS = {
    State Shape & Reducer
    ───────────────────────────────────────────────────────── */
 const initialState = {
-  activePortal: PORTALS.MERCHANT.id,
+  activePortal: window.location.pathname === '/admin' ? PORTALS.SUPER_ADMIN.id : PORTALS.MERCHANT.id,
   tenantSession: null, // { tenantId, name, apiKey, token }
+  adminSession: getStoredAdmin(), // { token, adminId, email, name }
   apiLatency: null,    // last measured latency in ms
 };
 
@@ -47,6 +49,10 @@ function portalReducer(state, action) {
       return { ...state, tenantSession: action.payload };
     case 'CLEAR_SESSION':
       return { ...state, tenantSession: null, apiLatency: null };
+    case 'SET_ADMIN_SESSION':
+      return { ...state, adminSession: action.payload };
+    case 'CLEAR_ADMIN_SESSION':
+      return { ...state, adminSession: null };
     case 'UPDATE_LATENCY':
       return { ...state, apiLatency: action.payload };
     default:
@@ -65,7 +71,25 @@ export function PortalProvider({ children }) {
   const switchPortal = useCallback((portalId) => {
     if (PORTALS[portalId]) {
       dispatch({ type: 'SWITCH_PORTAL', payload: portalId });
+      window.history.pushState(null, '', PORTALS[portalId].path);
     }
+  }, []);
+
+  // Synchronise active portal state with browser back/forward buttons
+  useEffect(() => {
+    const handlePopState = () => {
+      const path = window.location.pathname;
+      if (path === '/' || path === '') {
+        dispatch({ type: 'SWITCH_PORTAL', payload: PORTALS.MERCHANT.id });
+      } else {
+        const foundPortal = Object.values(PORTALS).find((p) => p.path === path);
+        if (foundPortal) {
+          dispatch({ type: 'SWITCH_PORTAL', payload: foundPortal.id });
+        }
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
   const setTenantSession = useCallback((session) => {
@@ -74,6 +98,14 @@ export function PortalProvider({ children }) {
 
   const clearSession = useCallback(() => {
     dispatch({ type: 'CLEAR_SESSION' });
+  }, []);
+
+  const setAdminSession = useCallback((session) => {
+    dispatch({ type: 'SET_ADMIN_SESSION', payload: session });
+  }, []);
+
+  const clearAdminSession = useCallback(() => {
+    dispatch({ type: 'CLEAR_ADMIN_SESSION' });
   }, []);
 
   const updateLatency = useCallback((ms) => {
@@ -87,6 +119,8 @@ export function PortalProvider({ children }) {
     switchPortal,
     setTenantSession,
     clearSession,
+    setAdminSession,
+    clearAdminSession,
     updateLatency,
   };
 

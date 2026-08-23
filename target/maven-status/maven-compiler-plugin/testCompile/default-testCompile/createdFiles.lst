@@ -1,2 +1,7 @@
+com\subsflow\security\JwtServiceTest.class
+com\subsflow\security\RateLimiterServiceTest.class
+com\subsflow\payment\PaymentGatewayConcurrencyTest.class
 com\subsflow\tenant\TenantIsolationTest.class
+com\subsflow\subscription\SubscriptionOptimisticLockingTest.class
+com\subsflow\subscription\SubscriptionStatusTransitionTest.class
 com\subsflow\payment\IdempotencyServiceTest.class
