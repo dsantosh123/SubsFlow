@@ -9,13 +9,20 @@ import { Button } from '../ui/Button';
 import { ArrowRight, Sparkles } from 'lucide-react';
 
 export function LandingPage({ onNavigateToApp, onNavigateToAuth, onNavigateToAdmin }) {
+  const scrollToFeatures = () => {
+    const el = document.getElementById('collaboration') || document.getElementById('features');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-white text-slate-900 selection:bg-indigo-500 selection:text-white">
       {/* Sticky Navigation Bar */}
       <LandingNavbar
         onGetStarted={() => onNavigateToAuth('register')}
         onSignIn={() => onNavigateToAuth('login')}
-        onExploreDemo={() => onNavigateToApp()}
+        onExploreDemo={scrollToFeatures}
         onNavigateToAdmin={onNavigateToAdmin}
       />
 
@@ -23,21 +30,25 @@ export function LandingPage({ onNavigateToApp, onNavigateToAuth, onNavigateToAdm
         {/* Hero Section with Dashboard Mockup */}
         <HeroSection
           onGetStarted={() => onNavigateToAuth('register')}
-          onExploreDemo={() => onNavigateToApp()}
+          onExploreDemo={scrollToFeatures}
         />
 
         {/* Trusted By Logo Ribbon */}
         <LogoRibbon />
 
         {/* Workspace Collaboration & Multi-Tenant Features Grid */}
-        <CollaborationFeatures
-          onExploreDemo={() => onNavigateToApp()}
-        />
+        <div id="features">
+          <CollaborationFeatures
+            onExploreDemo={() => onNavigateToAuth('login')}
+          />
+        </div>
 
         {/* Pricing Tiers Table */}
-        <PricingSection
-          onSelectPlan={(planId) => onNavigateToAuth('register')}
-        />
+        <div id="pricing">
+          <PricingSection
+            onSelectPlan={(planId) => onNavigateToAuth('register')}
+          />
+        </div>
 
         {/* Bottom CTA Banner */}
         <section className="py-16 md:py-20 bg-gradient-to-br from-indigo-900 via-slate-900 to-indigo-950 text-white text-center relative overflow-hidden">
@@ -60,18 +71,18 @@ export function LandingPage({ onNavigateToApp, onNavigateToAuth, onNavigateToAdm
                 size="lg"
                 variant="default"
                 onClick={() => onNavigateToAuth('register')}
-                className="bg-indigo-500 hover:bg-indigo-600 text-white font-bold w-full sm:w-auto"
+                className="w-full sm:w-auto font-bold bg-white text-indigo-950 hover:bg-slate-100 hover:text-indigo-900 shadow-xl"
               >
-                <span>Create Your Workspace Now</span>
+                <span>Start Free Trial Now</span>
                 <ArrowRight size={16} />
               </Button>
               <Button
                 size="lg"
                 variant="outline"
-                onClick={() => onNavigateToApp()}
-                className="bg-white/10 hover:bg-white/20 text-white border-white/20 w-full sm:w-auto"
+                onClick={() => onNavigateToAuth('login')}
+                className="w-full sm:w-auto font-semibold border-white/30 text-white hover:bg-white/10"
               >
-                <span>Launch Interactive Demo</span>
+                <span>Sign In to Existing Workspace</span>
               </Button>
             </div>
           </div>

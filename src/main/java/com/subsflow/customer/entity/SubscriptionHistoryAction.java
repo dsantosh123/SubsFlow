@@ -1,0 +1,13 @@
+package com.subsflow.customer.entity;
+
+public enum SubscriptionHistoryAction {
+    SUBSCRIPTION_CREATED,
+    TRIAL_STARTED,
+    TRIAL_ENDED,
+    PLAN_CHANGED,
+    SUBSCRIPTION_PAUSED,
+    SUBSCRIPTION_RESUMED,
+    CANCELLATION_REQUESTED,
+    SUBSCRIPTION_CANCELLED,
+    SUBSCRIPTION_EXPIRED
+}

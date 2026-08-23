@@ -25,6 +25,7 @@ public class AdminAuthService {
         }
 
         return adminRepository.findByEmail(email.trim().toLowerCase())
+                .filter(admin -> !"DISABLED".equalsIgnoreCase(admin.getStatus()))
                 .filter(admin -> passwordEncoder.matches(password, admin.getPasswordHash()))
                 .map(jwtService::generateAdminToken);
     }

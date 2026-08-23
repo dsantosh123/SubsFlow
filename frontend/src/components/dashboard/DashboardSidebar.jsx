@@ -2,6 +2,7 @@ import React from 'react';
 import { 
   LayoutDashboard, 
   Users, 
+  Box,
   Layers, 
   Receipt, 
   Activity, 
@@ -24,10 +25,12 @@ export function DashboardSidebar({
   activeTab,
   onSelectTab,
   membersCount = 4,
+  productsCount = 0,
   onOpenPricing,
 }) {
   const navItems = [
     { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+    { id: 'products', label: 'SaaS Products', icon: Box, badge: productsCount > 0 ? `${productsCount}` : null },
     { id: 'team', label: 'Team & Roles', icon: Users, badge: `${membersCount}` },
     { id: 'subscriptions', label: 'Subscriptions', icon: Layers },
     { id: 'invoices', label: 'Invoices & Billing', icon: Receipt },
@@ -90,8 +93,10 @@ export function DashboardSidebar({
 
                 {item.badge && (
                   <span
-                    className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
-                      isActive ? 'bg-indigo-200/60 text-indigo-800 font-bold' : 'bg-slate-100 text-slate-500'
+                    className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+                      isActive
+                        ? 'bg-indigo-600 text-white'
+                        : 'bg-slate-100 text-slate-600'
                     }`}
                   >
                     {item.badge}
@@ -103,31 +108,35 @@ export function DashboardSidebar({
         </nav>
       </div>
 
-      {/* Bottom Quota Box & Upgrade Banner */}
+      {/* Bottom Pro Upsell Card */}
       <div className="p-4 border-t border-slate-100 space-y-3">
-        <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80 space-y-2">
-          <div className="flex items-center justify-between text-xs">
-            <span className="font-bold text-slate-800">Team Seats</span>
-            <span className="text-[11px] font-mono text-indigo-700 font-bold">{membersCount} / 10 Used</span>
+        <div className="p-3.5 bg-gradient-to-b from-indigo-50/70 to-slate-50 border border-indigo-100 rounded-2xl space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+              <Sparkles size={14} className="text-indigo-600" />
+              {activeWorkspace?.tier || 'Growth Plan'}
+            </span>
+            <Badge variant="success" size="sm">
+              RLS Active
+            </Badge>
           </div>
+          <p className="text-[11px] text-slate-500 leading-tight">
+            Multi-Tenant Isolation enforced via Postgres session context.
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onOpenPricing}
+            className="w-full text-xs font-semibold bg-white text-indigo-600 border-indigo-200 hover:bg-indigo-50/50 justify-center gap-1"
+          >
+            <span>Upgrade Tier</span>
+            <ArrowUpRight size={13} />
+          </Button>
+        </div>
 
-          <div className="w-full h-2 rounded-full bg-slate-200 overflow-hidden">
-            <div
-              className="h-full bg-indigo-600 rounded-full transition-all"
-              style={{ width: `${(membersCount / 10) * 100}%` }}
-            />
-          </div>
-
-          <div className="flex items-center justify-between pt-1 text-[11px]">
-            <span className="text-slate-500">{activeWorkspace?.tier || 'Growth Tier'}</span>
-            <button
-              onClick={onOpenPricing}
-              className="text-indigo-600 font-bold hover:underline cursor-pointer flex items-center gap-0.5"
-            >
-              <span>Upgrade</span>
-              <ArrowUpRight size={11} />
-            </button>
-          </div>
+        <div className="flex items-center justify-between px-1 text-[11px] text-slate-400">
+          <span>SubsFlow v0.3.0</span>
+          <span className="font-mono text-[10px] bg-slate-100 px-1.5 py-0.5 rounded text-slate-500">Phase 3</span>
         </div>
       </div>
     </aside>

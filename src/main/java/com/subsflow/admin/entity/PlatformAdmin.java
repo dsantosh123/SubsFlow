@@ -26,6 +26,9 @@ public class PlatformAdmin {
     @Column(nullable = false)
     private String role = "ROLE_SUBSFLOW_ADMIN";
 
+    @Column(nullable = false)
+    private String status = "ACTIVE";
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt = OffsetDateTime.now();
 

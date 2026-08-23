@@ -5,6 +5,8 @@ import { DashboardOverview } from './DashboardOverview';
 import { TeamRolesTable } from './TeamRolesTable';
 import { InviteMemberModal } from './InviteMemberModal';
 import { CreateWorkspaceModal } from './CreateWorkspaceModal';
+import { ProductListView } from '../products/ProductListView';
+import { ProductDetailView } from '../products/ProductDetailView';
 import { Dialog } from '../ui/Dialog';
 import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
@@ -24,25 +26,32 @@ import {
   CheckCircle2,
   Copy,
   ExternalLink,
-  Plus
+  Plus,
+  Box
 } from 'lucide-react';
 import { getStoredUser, getTeamMembers, inviteTeamMember } from '../../tenantAuthApi';
+import { listProducts, createProduct } from '../../productApi';
 
 export function DashboardLayout({
   onBackToLanding,
   onOpenPricing,
   onTriggerToast,
 }) {
-  const [activeTab, setActiveTab] = useState('team');
+  const [activeTab, setActiveTab] = useState('products'); // Default to products for Phase 3 showcase
   const [isInviteOpen, setIsInviteOpen] = useState(false);
   const [isCreateWsOpen, setIsCreateWsOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentUser, setCurrentUser] = useState(() => getStoredUser());
 
+  // Products State (Phase 3)
+  const [products, setProducts] = useState([]);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [loadingProducts, setLoadingProducts] = useState(false);
+
   // Default fallback workspaces
   const defaultWorkspaces = [
-    { id: 't_acme_prod', name: 'Acme Corp (Production)', tier: 'Growth Plan', region: 'us-east-1', apiKey: 'sk_live_acme_prod_9921', status: 'ACTIVE' },
+    { id: 't_acme_prod', name: 'Netflix Corp (Production)', tier: 'Growth Plan', region: 'us-east-1', apiKey: 'sk_live_netflix_prod_9921', status: 'ACTIVE' },
     { id: 't_globex_stg', name: 'Globex Cloud (Staging)', tier: 'Starter Plan', region: 'us-west-2', apiKey: 'sk_test_globex_stg_4180', status: 'ACTIVE' },
     { id: 't_apex_sand', name: 'Apex Dynamics (Sandbox)', tier: 'Enterprise Plan', region: 'eu-central-1', apiKey: 'sk_test_apex_sand_7712', status: 'ACTIVE' },
   ];
@@ -74,12 +83,10 @@ export function DashboardLayout({
   const loadRealTeamMembers = useCallback(async () => {
     const user = getStoredUser();
     if (!user || !user.token) {
-      // Use fallback mock members
       setMembers([
-        { id: 'usr_01', name: 'Sarah Connor', email: 'sarah@acme.io', role: 'owner', status: 'Active', avatar: 'SC', color: 'bg-purple-100 text-purple-700', lastActive: 'Just now', joinedAt: 'Jan 12, 2026' },
-        { id: 'usr_02', name: 'Alex Rivera', email: 'alex@acme.io', role: 'admin', status: 'Active', avatar: 'AR', color: 'bg-indigo-100 text-indigo-700', lastActive: '12m ago', joinedAt: 'Feb 04, 2026' },
-        { id: 'usr_03', name: 'Elena Rostova', email: 'elena@acme.io', role: 'editor', status: 'Active', avatar: 'ER', color: 'bg-emerald-100 text-emerald-700', lastActive: '1h ago', joinedAt: 'Mar 15, 2026' },
-        { id: 'usr_04', name: 'Marcus Chen', email: 'marcus@acme.io', role: 'viewer', status: 'Active', avatar: 'MC', color: 'bg-slate-100 text-slate-700', lastActive: 'Yesterday', joinedAt: 'Apr 02, 2026' },
+        { id: 'usr_01', name: 'Sarah Connor', email: 'sarah@netflix.io', role: 'owner', status: 'Active', avatar: 'SC', color: 'bg-purple-100 text-purple-700', lastActive: 'Just now', joinedAt: 'Jan 12, 2026' },
+        { id: 'usr_02', name: 'Alex Rivera', email: 'alex@netflix.io', role: 'admin', status: 'Active', avatar: 'AR', color: 'bg-indigo-100 text-indigo-700', lastActive: '12m ago', joinedAt: 'Feb 04, 2026' },
+        { id: 'usr_03', name: 'Elena Rostova', email: 'elena@netflix.io', role: 'developer', status: 'Active', avatar: 'ER', color: 'bg-emerald-100 text-emerald-700', lastActive: '1h ago', joinedAt: 'Mar 15, 2026' },
       ]);
       return;
     }
@@ -100,7 +107,6 @@ export function DashboardLayout({
       }));
       setMembers(mapped);
     } else {
-      // If endpoint returns empty or single owner
       setMembers([
         {
           id: user.id || 'usr_owner',
@@ -118,9 +124,45 @@ export function DashboardLayout({
     setLoadingMembers(false);
   }, []);
 
+  // Fetch real products from backend API (Phase 3)
+  const loadRealProducts = useCallback(async () => {
+    const user = getStoredUser();
+    if (!user || !user.token) {
+      setProducts([
+        {
+          id: 'prod_streaming',
+          tenantId: activeWorkspace.id,
+          name: 'Netflix Streaming',
+          description: 'Global 4K HDR on-demand video streaming platform',
+          websiteUrl: 'https://netflix.com',
+          status: 'ACTIVE',
+          createdAt: new Date().toISOString(),
+        },
+        {
+          id: 'prod_games',
+          tenantId: activeWorkspace.id,
+          name: 'Netflix Games',
+          description: 'Cloud and mobile gaming catalog for active subscribers',
+          websiteUrl: 'https://games.netflix.com',
+          status: 'ACTIVE',
+          createdAt: new Date().toISOString(),
+        }
+      ]);
+      return;
+    }
+
+    setLoadingProducts(true);
+    const res = await listProducts();
+    if (res.ok && Array.isArray(res.data)) {
+      setProducts(res.data);
+    }
+    setLoadingProducts(false);
+  }, [activeWorkspace.id]);
+
   useEffect(() => {
     loadRealTeamMembers();
-  }, [loadRealTeamMembers, activeWorkspace]);
+    loadRealProducts();
+  }, [loadRealTeamMembers, loadRealProducts, activeWorkspace]);
 
   // Global search shortcut ⌘K
   useEffect(() => {
@@ -136,6 +178,7 @@ export function DashboardLayout({
 
   const handleSelectWorkspace = (ws) => {
     setActiveWorkspace(ws);
+    setSelectedProduct(null);
     if (onTriggerToast) {
       onTriggerToast('success', 'Workspace Switched', `Active workspace is now ${ws.name}`);
     }
@@ -144,6 +187,7 @@ export function DashboardLayout({
   const handleCreateWorkspace = (newWs) => {
     setWorkspaces((prev) => [newWs, ...prev]);
     setActiveWorkspace(newWs);
+    setSelectedProduct(null);
     if (onTriggerToast) {
       onTriggerToast('success', 'Workspace Provisioned', `New tenant ${newWs.name} created with dedicated RLS.`);
     }
@@ -161,7 +205,6 @@ export function DashboardLayout({
         onTriggerToast('success', 'Member Invited', `Successfully invited ${name} as ${role}!`);
       }
     } else {
-      // Local state fallback
       const newMember = {
         id: 'usr_' + Date.now().toString().slice(-6),
         name,
@@ -178,6 +221,41 @@ export function DashboardLayout({
         onTriggerToast('success', 'Member Added', `Added ${name} to workspace.`);
       }
     }
+  };
+
+  const handleCreateProduct = async ({ name, description, websiteUrl }) => {
+    const user = getStoredUser();
+    if (user && user.token) {
+      const res = await createProduct(name, description, websiteUrl);
+      if (!res.ok) {
+        throw new Error(res.data?.error || 'Failed to register product via backend');
+      }
+      await loadRealProducts();
+      setSelectedProduct(res.data);
+      if (onTriggerToast) {
+        onTriggerToast('success', 'Product Registered', `Registered ${name} successfully!`);
+      }
+    } else {
+      const newProduct = {
+        id: 'prod_' + Date.now().toString().slice(-6),
+        tenantId: activeWorkspace.id,
+        name,
+        description,
+        websiteUrl,
+        status: 'ACTIVE',
+        createdAt: new Date().toISOString(),
+      };
+      setProducts((prev) => [newProduct, ...prev]);
+      setSelectedProduct(newProduct);
+      if (onTriggerToast) {
+        onTriggerToast('success', 'Product Registered', `Registered ${name} successfully!`);
+      }
+    }
+  };
+
+  const handleProductUpdated = (updated) => {
+    setProducts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+    setSelectedProduct(updated);
   };
 
   const handleUpdateRole = (memberId, newRole) => {
@@ -213,8 +291,12 @@ export function DashboardLayout({
         onSelectWorkspace={handleSelectWorkspace}
         onCreateWorkspaceClick={() => setIsCreateWsOpen(true)}
         activeTab={activeTab}
-        onSelectTab={setActiveTab}
+        onSelectTab={(tab) => {
+          setActiveTab(tab);
+          if (tab === 'products') setSelectedProduct(null);
+        }}
         membersCount={members.length}
+        productsCount={products.length}
         onOpenPricing={onOpenPricing}
       />
 
@@ -223,7 +305,7 @@ export function DashboardLayout({
         {/* Top Header */}
         <DashboardHeader
           activeWorkspace={activeWorkspace}
-          currentUser={currentUser || { name: 'Sarah Connor', email: 'sarah@acme.io', role: 'Owner' }}
+          currentUser={currentUser || { name: 'Sarah Connor', email: 'sarah@netflix.io', role: 'Owner' }}
           onOpenSearch={() => setIsSearchOpen(true)}
           onInviteClick={() => setIsInviteOpen(true)}
           onSignOut={onBackToLanding}
@@ -232,11 +314,34 @@ export function DashboardLayout({
 
         {/* Content Container */}
         <main className="flex-1 p-6 md:p-8 max-w-7xl w-full mx-auto space-y-6">
+          {activeTab === 'products' && (
+            selectedProduct ? (
+              <ProductDetailView
+                product={selectedProduct}
+                onBack={() => setSelectedProduct(null)}
+                onProductUpdated={handleProductUpdated}
+                onTriggerToast={onTriggerToast}
+                currentUserRole={currentUser?.role || 'OWNER'}
+              />
+            ) : (
+              <ProductListView
+                products={products}
+                loading={loadingProducts}
+                onSelectProduct={(p) => setSelectedProduct(p)}
+                onCreateProduct={handleCreateProduct}
+                currentUserRole={currentUser?.role || 'OWNER'}
+              />
+            )
+          )}
+
           {activeTab === 'overview' && (
             <DashboardOverview
               workspace={activeWorkspace}
               membersCount={members.length}
-              onNavigateTab={setActiveTab}
+              onNavigateTab={(tab) => {
+                setActiveTab(tab);
+                if (tab === 'products') setSelectedProduct(null);
+              }}
               onInviteClick={() => setIsInviteOpen(true)}
             />
           )}
@@ -274,12 +379,12 @@ export function DashboardLayout({
                 </Card>
 
                 <Card className="p-6">
-                  <span className="text-xs text-slate-400 font-bold uppercase">Team Seats</span>
-                  <div className="text-2xl font-extrabold text-slate-900 mt-2">{members.length} / 10</div>
-                  <p className="text-xs text-slate-500 mt-1">Admin, Editor, and Viewer allocated seats.</p>
+                  <span className="text-xs text-slate-400 font-bold uppercase">Registered SaaS Products</span>
+                  <div className="text-2xl font-extrabold text-slate-900 mt-2">{products.length} Products</div>
+                  <p className="text-xs text-slate-500 mt-1">Isolated client ID and secret credentials.</p>
                   <div className="mt-4 pt-4 border-t border-slate-100 flex justify-between items-center text-xs">
-                    <span className="text-indigo-600 font-bold">{Math.max(0, 10 - members.length)} available</span>
-                    <span className="text-indigo-600 hover:underline cursor-pointer" onClick={() => setIsInviteOpen(true)}>Invite +</span>
+                    <span className="text-indigo-600 font-bold">Isolated RLS</span>
+                    <span className="text-indigo-600 hover:underline cursor-pointer" onClick={() => { setActiveTab('products'); setSelectedProduct(null); }}>View Products →</span>
                   </div>
                 </Card>
 
@@ -320,13 +425,6 @@ export function DashboardLayout({
                       <td className="p-3.5"><Badge variant="success" size="sm">PAID</Badge></td>
                       <td className="p-3.5 text-right"><span className="text-indigo-600 font-bold hover:underline cursor-pointer">Download PDF</span></td>
                     </tr>
-                    <tr className="hover:bg-slate-50/60">
-                      <td className="p-3.5 font-mono font-bold text-slate-900">inv_2026_03</td>
-                      <td className="p-3.5 text-slate-600">Mar 1 - Mar 31, 2026</td>
-                      <td className="p-3.5 font-bold text-slate-900">$79.00</td>
-                      <td className="p-3.5"><Badge variant="success" size="sm">PAID</Badge></td>
-                      <td className="p-3.5 text-right"><span className="text-indigo-600 font-bold hover:underline cursor-pointer">Download PDF</span></td>
-                    </tr>
                   </tbody>
                 </table>
               </div>
@@ -336,14 +434,14 @@ export function DashboardLayout({
           {activeTab === 'apikeys' && (
             <Card className="p-6 space-y-6">
               <div>
-                <h3 className="text-base font-bold text-slate-900">Tenant API Credentials & Relays</h3>
-                <p className="text-xs text-slate-500 mt-1">Use these keys to authenticate REST and Gateway usage events.</p>
+                <h3 className="text-base font-bold text-slate-900">Tenant Master API Key (Legacy)</h3>
+                <p className="text-xs text-slate-500 mt-1">Tenant-wide master key preserved for backward compatibility.</p>
               </div>
 
               <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
                 <div className="flex justify-between items-center text-xs">
-                  <span className="font-bold text-slate-700">Live Secret Key</span>
-                  <Badge variant="primary" size="sm">TENANT SCOPED</Badge>
+                  <span className="font-bold text-slate-700">Master Secret Key</span>
+                  <Badge variant="primary" size="sm">TENANT MASTER</Badge>
                 </div>
                 <div className="flex items-center gap-2">
                   <Input
@@ -422,7 +520,7 @@ export function DashboardLayout({
             <Search size={18} className="absolute left-3.5 top-3 text-slate-400" />
             <input
               type="text"
-              placeholder="Search workspaces, team members, roles, or tabs..."
+              placeholder="Search workspaces, products, team members, or tabs..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 bg-slate-50 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600"
@@ -434,15 +532,16 @@ export function DashboardLayout({
             <div className="text-[10px] font-bold uppercase text-slate-400 px-2">Navigation Shortcuts</div>
             <div className="grid grid-cols-2 gap-1">
               {[
+                { label: 'SaaS Products & Keys', tab: 'products', icon: Box },
                 { label: 'Team & Roles Table', tab: 'team', icon: Users },
                 { label: 'Overview Analytics', tab: 'overview', icon: Building2 },
                 { label: 'Subscriptions', tab: 'subscriptions', icon: Layers },
-                { label: 'Invoices & Billing', tab: 'invoices', icon: Receipt },
               ].map((item, idx) => (
                 <button
                   key={idx}
                   onClick={() => {
                     setActiveTab(item.tab);
+                    if (item.tab === 'products') setSelectedProduct(null);
                     setIsSearchOpen(false);
                   }}
                   className="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-100 text-slate-700 text-left cursor-pointer"
@@ -453,28 +552,24 @@ export function DashboardLayout({
               ))}
             </div>
 
-            <div className="text-[10px] font-bold uppercase text-slate-400 px-2 pt-2">Team Members ({members.length})</div>
-            {members
-              .filter(m => m.name.toLowerCase().includes(searchQuery.toLowerCase()) || m.email.toLowerCase().includes(searchQuery.toLowerCase()))
-              .map((m) => (
+            <div className="text-[10px] font-bold uppercase text-slate-400 px-2 pt-2">SaaS Products ({products.length})</div>
+            {products
+              .filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()))
+              .map((p) => (
                 <div
-                  key={m.id}
+                  key={p.id}
                   onClick={() => {
-                    setActiveTab('team');
+                    setActiveTab('products');
+                    setSelectedProduct(p);
                     setIsSearchOpen(false);
                   }}
                   className="flex items-center justify-between p-2 rounded-lg hover:bg-slate-100 cursor-pointer"
                 >
                   <div className="flex items-center gap-2">
-                    <div className={`w-6 h-6 rounded-full ${m.color} text-[10px] font-bold flex items-center justify-center`}>
-                      {m.avatar}
-                    </div>
-                    <div>
-                      <span className="font-bold text-slate-900">{m.name}</span>
-                      <span className="text-slate-400 ml-2 font-mono text-[11px]">{m.email}</span>
-                    </div>
+                    <Box size={14} className="text-indigo-600" />
+                    <span className="font-bold text-slate-900">{p.name}</span>
                   </div>
-                  <Badge variant={m.role} size="sm">{m.role.toUpperCase()}</Badge>
+                  <Badge variant={p.status === 'ACTIVE' ? 'success' : 'outline'} size="sm">{p.status}</Badge>
                 </div>
               ))}
           </div>

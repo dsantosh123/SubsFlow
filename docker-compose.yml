@@ -1,24 +1,25 @@
 services:
-#  app:
-#    build:
-#      context: .
-#      dockerfile: Dockerfile
-#    container_name: subsflow-app
-#    depends_on:
-#      postgres:
-#        condition: service_healthy
-#      redis:
-#        condition: service_started
-#      kafka:
-#        condition: service_started
-#    ports:
-#      - "8080:8080"
-#    environment:
-#      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/subsflow
-#      SPRING_DATASOURCE_USERNAME: postgres
-#      SPRING_DATASOURCE_PASSWORD: postgres
-#      SPRING_DATA_REDIS_HOST: redis
-#      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: subsflow-app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/subsflow
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SUBSFLOW_JWT_SECRET: subsflow-super-secure-jwt-signing-secret-key-32bytes-minimum-length!
+      PORT: 8080
 
   postgres:
     image: postgres:15-alpine

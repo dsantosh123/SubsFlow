@@ -2,9 +2,9 @@ spring:
   application:
     name: subsflow
   datasource:
-    url: jdbc:postgresql://localhost:5433/subsflow
-    username: postgres
-    password: postgres
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/subsflow}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 50
@@ -36,8 +36,9 @@ spring:
     clean-disabled: true
   data:
     redis:
-      host: localhost
-      port: 6379
+      host: ${SPRING_DATA_REDIS_HOST:localhost}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
+      password: ${SPRING_DATA_REDIS_PASSWORD:}
       timeout: 2000ms
   kafka:
     bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
@@ -77,7 +78,7 @@ management:
       enabled: true
 
 server:
-  port: 8080
+  port: ${PORT:8080}
   tomcat:
     threads:
       max: 200
@@ -108,7 +109,7 @@ resilience4j:
 
 subsflow:
   jwt:
-    secret: "subsflow-super-secure-jwt-signing-secret-key-32bytes-minimum-length!"
-    expiration-ms: 86400000 # 24 hours
+    secret: ${SUBSFLOW_JWT_SECRET:subsflow-super-secure-jwt-signing-secret-key-32bytes-minimum-length!}
+    expiration-ms: ${SUBSFLOW_JWT_EXPIRATION_MS:86400000} # 24 hours
   rate-limit:
-    requests-per-minute: 10000
+    requests-per-minute: ${SUBSFLOW_RATE_LIMIT:10000}

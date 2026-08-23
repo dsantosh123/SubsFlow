@@ -1,0 +1,13 @@
+package com.subsflow.plan.entity;
+
+public enum PlanAuditAction {
+    PLAN_CREATED,
+    PLAN_UPDATED,
+    PLAN_ACTIVATED,
+    PLAN_DEACTIVATED,
+    PLAN_ARCHIVED,
+    PLAN_REORDERED,
+    PLAN_FEATURE_ADDED,
+    PLAN_FEATURE_UPDATED,
+    PLAN_FEATURE_REMOVED
+}
