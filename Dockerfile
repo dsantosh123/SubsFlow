@@ -30,6 +30,6 @@ USER subsflow
 
 COPY --from=backend-build /workspace/target/*.jar app.jar
 
-EXPOSE 8080
+EXPOSE 8080 10000
 
 ENTRYPOINT ["java", "-Djava.security.egd=file:/dev/./urandom", "-jar", "/app/app.jar"]
