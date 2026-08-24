@@ -65,7 +65,10 @@ spring:
       payment-success: payment.succeeded
       payment-failure: payment.failed
       subscription-changed: subscription.changed
-
+    properties:
+      security.protocol: ${SPRING_KAFKA_PROPERTIES_SECURITY_PROTOCOL:SSL}
+      ssl.truststore.type: ${SPRING_KAFKA_PROPERTIES_SSL_TRUSTSTORE_TYPE:PEM}
+      ssl.truststore.certificates: ${SPRING_KAFKA_SSL_TRUSTSTORE_CERTIFICATES}
 management:
   endpoints:
     web:
