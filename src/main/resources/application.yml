@@ -3,8 +3,8 @@ spring:
     name: subsflow
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/subsflow}
-    username: ${SPRING_DATASOURCE_USERNAME:postgres}
-    password: ${SPRING_DATASOURCE_PASSWORD:postgres}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 50
@@ -109,7 +109,7 @@ resilience4j:
 
 subsflow:
   jwt:
-    secret: ${SUBSFLOW_JWT_SECRET:subsflow-super-secure-jwt-signing-secret-key-32bytes-minimum-length!}
+    secret: ${SUBSFLOW_JWT_SECRET}
     expiration-ms: ${SUBSFLOW_JWT_EXPIRATION_MS:86400000} # 24 hours
   rate-limit:
     requests-per-minute: ${SUBSFLOW_RATE_LIMIT:10000}
